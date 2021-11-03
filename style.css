@@ -1,0 +1,125 @@
+body {
+    background-color: #242424;
+    margin: 0.25em 0.5em;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+h1 {
+    text-align: center;
+    font-size: 16px;
+    margin: 0;
+}
+
+ol {
+    margin: 0;
+    list-style-position: inside;
+    padding: 0;
+}
+
+h1, p, li, button {
+    user-select: none;
+}
+
+h1, p, li, button, textarea, input[type=text], select {
+    color: white;
+    font-weight: 100;
+    font-family: Calibri;
+}
+
+p, li, button, textarea {
+    font-size: 12px;
+}
+
+#order-of-service [selected] {
+    background-color: #333;
+    margin: 0 0.5em;
+    padding-left: 5px;
+}
+
+button {
+    display: block;
+    margin: 1px 0;
+    width: 100%;
+    background-color: #454545;
+    border: none;
+    border-radius: 3px;
+    padding: 4px;
+    outline: none;
+}
+
+    button:hover {
+        background-color: #787878;
+    }
+
+    button:disabled {
+        background-color: #2f2f2f;
+        color: #777;
+    }
+
+#service-editor textarea, #key-moments {
+    display: block;
+    background-color: #383838;
+    resize: none;
+    width: 90%;
+    margin: 5px auto;
+    border-color: black;
+    -ms-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+    min-height: 5em;
+}
+
+#key-moments[highlight] {
+    border-color: #3f66;
+}
+
+#reset-key-moments[highlight]{
+    background-color: #9009;
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+    .menu > div {
+        display: flex;
+        flex-direction: column;
+        -ms-flex: 1;
+        -webkit-flex: 1;
+        flex: 1;
+        margin: 10px;
+        padding: 10px;
+        background-color: #252525f6;
+        border: 1px solid black;
+        border-radius: 10px;
+        min-height: fit-content;
+    }
+
+    .menu button.close {
+        margin-top: auto;
+    }
+
+#auto-scenes input[type=text], #auto-scenes select {
+    width: -webkit-fill-available;
+    background-color: #454545;
+    border: none;
+    border-radius: 3px;
+    padding: 2px;
+}
+
+#auto-scenes .remove:after {
+    content: "-";
+    padding: 0 0.5em;
+}
