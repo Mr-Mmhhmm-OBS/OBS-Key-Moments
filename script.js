@@ -13,7 +13,7 @@ String.prototype.toSeconds = function () {
     return (+hms[0]) * 60 * 60 + (+hms[1]) * 60 + (+hms[2] || 0);
 }
 
-var start_time;
+var start_time = Math.trunc(new Date().getTime() / 1000);
 var order_of_service = [];
 var key_moments = [];
 var auto_scenes = {};
@@ -228,7 +228,7 @@ function EnableAddKeyMoment() {
             setTimeout(
                 function () {
                     EnableAddKeyMoment();
-                }, (start_time + key_moments[key_moments.length - 1].timecode) - (new Date().getTime() / 1000));
+                }, ((new Date().getTime() / 1000) - start_time + key_moments[key_moments.length - 1].timecode));
         }
     });
 }
