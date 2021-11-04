@@ -92,12 +92,6 @@ window.onload = function (event) {
         }
     }
     //document.getElementById("text").innerHTML = window.obsstudio.pluginVersion;
-
-    document.addEventListener("keydown", function (event){
-        if (event.key === 'd') {
-            console.log("got it");
-        }
-});
 }
 
 function EditService(enable) {
@@ -125,7 +119,7 @@ function EditAutoScenes(enable) {
     if (enable) {
         var auto_scenes_el = document.getElementById("auto-scenes");
         for (var tr of auto_scenes_el.children) {
-            var options_el = tr.children[1].firstChild;
+            var options_el = tr.children[2];
             while (options_el.firstChild) {
                 options_el.firstChild.remove();
             }
@@ -139,10 +133,10 @@ function EditAutoScenes(enable) {
             }
             var rows = document.getElementById("auto-scenes").children;
             for (var tr_idx = 0; tr_idx < rows.length; tr_idx++) {
-                var select = rows[tr_idx].children[1].firstChild;
+                var select = rows[tr_idx].children[2];
                 PopulateOptions(select, scene_names);
 
-                var service_item = rows[tr_idx].children[0].firstChild.value;
+                var service_item = rows[tr_idx].children[1].value;
                 if (service_item.length > 0 && typeof auto_scenes[service_item] === 'string') {
                     SelectOption(select, auto_scenes[service_item]);
                 }
@@ -151,9 +145,9 @@ function EditAutoScenes(enable) {
     } else {
         auto_scenes = {};
         for (var item of document.getElementById("auto-scenes").children) {
-            var service_item = item.cells[0].firstChild.value;
+            var service_item = item.children[1].value;
             if (service_item.length > 0) {
-                auto_scenes[service_item] = item.cells[1].firstChild.value;
+                auto_scenes[service_item] = item.children[2].value;
             }
         }
         window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
@@ -187,35 +181,31 @@ function SelectOption(selectElement, optionValToSelect) {
 }
 
 function AddAutoScene(service_item) {
-    var tr = document.createElement("tr");
-    tr.className = "auto-scene";
-    var td = document.createElement("td");
-    var input = document.createElement("input");
-    input.type = "text";
-    if (typeof service_item === 'string' && service_item.length > 0) {
-        input.value = service_item;
-    }
-    td.appendChild(input);
-    tr.appendChild(td);
+    var div = document.createElement("div");
+    div.className = "auto-scene";
 
-    var td = document.createElement("td");
-    var select = document.createElement("select");
-    PopulateOptions(select, scene_names);
-    td.appendChild(select);
-    tr.appendChild(td);
-
-    var td = document.createElement("td");
     var button = document.createElement("button");
     button.className = "remove";
     button.onclick = RemoveAutoScene;
-    td.appendChild(button);
-    tr.appendChild(td);
+    div.appendChild(button);
 
-    document.getElementById("auto-scenes").appendChild(tr);
+    var input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Service item";
+    if (typeof service_item === 'string' && service_item.length > 0) {
+        input.value = service_item;
+    }
+    div.appendChild(input);
+
+    var select = document.createElement("select");
+    PopulateOptions(select, scene_names);
+    div.appendChild(select);
+
+    document.getElementById("auto-scenes").appendChild(div);
 }
 
 function RemoveAutoScene(event) {
-    event.currentTarget.parentElement.parentElement.remove();
+    event.currentTarget.parentElement.remove();
 }
 
 function EnableAddKeyMoment() {

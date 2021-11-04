@@ -111,15 +111,29 @@ button {
         margin-top: auto;
     }
 
-#auto-scenes input[type=text], #auto-scenes select {
-    width: -webkit-fill-available;
+.auto-scene input[type=text], .auto-scene select {
+    -ms-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
     background-color: #454545;
     border: none;
     border-radius: 3px;
     padding: 2px;
+    margin: 1px;
 }
 
-#auto-scenes .remove:after {
+.auto-scene button.remove {
+    -ms-flex: 0;
+    -webkit-flex: 0;
+    flex: 0;
+}
+
+.auto-scene{
+    display: flex;
+    flex-direction: row;
+}
+
+.auto-scene .remove:after {
     content: "-";
     padding: 0 0.5em;
 }
