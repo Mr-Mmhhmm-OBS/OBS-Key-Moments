@@ -13,6 +13,10 @@ String.prototype.toSeconds = function () {
     return (+hms[0]) * 60 * 60 + (+hms[1]) * 60 + (+hms[2] || 0);
 }
 
+function IndexOfElement(element) {
+    return Array.from(element.parentElement.children).indexOf(element)
+}
+
 var start_time = Math.trunc(new Date().getTime() / 1000);
 var order_of_service = [];
 var key_moments = [];
@@ -56,21 +60,44 @@ obs.connect().then(() => {
 });
 
 window.onload = function (event) {
-    var value = window.localStorage.getItem("order-of-service");
-    if (typeof value === 'string' && value.length > 0) {
-        order_of_service = JSON.parse(value);
-        document.getElementById("editor_order_of_service").value = order_of_service.join('\n');
-        for (var item of order_of_service) {
-            var el = document.createElement("li");
-            el.innerText = item;
-            document.getElementById("order-of-service").appendChild(el);
+    $("#order-of-service").on("click", "li[selected] button.additem", function (e) {
+        var index = IndexOfElement(e.currentTarget.parentElement);
+        order_of_service.splice(index + 1, 0, "");
+        var $el = CreateServiceItem("", index);
+        $(e.currentTarget.parentElement).after($el);
+        $el.find("input").focus();
+    }).on('keydown', "input[type=text]", (e) => {
+        switch (e.key) {
+            case 'Enter':
+                if (e.currentTarget.value.length > 0) {
+                    var index = IndexOfElement(e.currentTarget.parentElement);
+                    order_of_service.splice(index, 0, "");
+                    var $el = CreateServiceItem("", index);
+                    $(e.currentTarget.parentElement).after($el);
+                    $el.find("input").focus();
+                } else {
+                    e.currentTarget.blur();
+                }
+                break;
+            case 'Backspace':
+                if (e.currentTarget.value.length === 0) {
+                    e.preventDefault();
+                    $(e.currentTarget.parentElement.previousSibling).find("input").focus();
+                }
+                break;
+            default:
         }
-    }
-
-    var value = window.localStorage.getItem("start-time");
-    if (typeof value === 'string' && value.length > 0) {
-        start_time = parseInt(value);
-    }
+    }).on("blur", "input[type=text]", function (e) {
+        var index = IndexOfElement(e.currentTarget.parentElement);
+        order_of_service[index] = e.currentTarget.value;
+        window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
+        if (e.currentTarget.value.length === 0 && order_of_service.length > 1) {
+            // Remove empty service item
+            e.currentTarget.parentElement.remove();
+            order_of_service.splice(index, 1);
+        }
+        EnableAddKeyMoment();
+    });
 
     var value = window.localStorage.getItem("key-moments");
     if (typeof value === 'string' && value.length > 0) {
@@ -80,6 +107,26 @@ window.onload = function (event) {
             el.value += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
         }
     }
+
+    var value = window.localStorage.getItem("order-of-service");
+    if (typeof value === 'string' && value.length > 0) {
+        order_of_service = JSON.parse(value);
+        if (order_of_service.length > 0) {
+            for (var index = 0; index < order_of_service.length; index++) {
+                $("#order-of-service").append(CreateServiceItem(order_of_service[index], index));
+            }
+        } else {
+            $("#order-of-service").append(CreateServiceItem());
+        }
+    } else {
+        $("#order-of-service").append(CreateServiceItem());
+    }
+
+    var value = window.localStorage.getItem("start-time");
+    if (typeof value === 'string' && value.length > 0) {
+        start_time = parseInt(value);
+    }
+
     if (key_moments.length > 0) {
         document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
     }
@@ -88,29 +135,24 @@ window.onload = function (event) {
     if (typeof value === 'string' && value.length > 0) {
         auto_scenes = JSON.parse(value);
         for (var service_item in auto_scenes) {
+            $("#service-items").append(
+                $("<option/>", { value: service_item }).html(service_item)
+            );
             AddAutoScene(service_item);
         }
     }
     //document.getElementById("text").innerHTML = window.obsstudio.pluginVersion;
-}
 
-function EditService(enable) {
-    document.getElementById("service-editor").style.display = (enable ? "" : "none");
-    if (!enable) {
-        var div = document.getElementById("order-of-service");
-        while (div.firstChild) {
-            div.firstChild.remove();
-        }
-
-        order_of_service = document.getElementById("editor_order_of_service").value.split("\n").filter(e => e);
-        window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service));
-        for (var item of order_of_service) {
-            var el = document.createElement("li");
-            el.innerText = item;
-            div.appendChild(el);
-        }
-
-        EnableAddKeyMoment();
+    function CreateServiceItem(item, index) {
+        return $("<li/>").append(
+            $("<input/>", {
+                type: "text",
+                spellcheck: true,
+                list: "service-items",
+                disabled: typeof item === 'string' && item.length > 0 && typeof index === 'number' && key_moments.length > index
+            }).val(item),
+            $("<button/>", { class: "additem" }).html("+")
+        );
     }
 }
 
@@ -154,6 +196,25 @@ function EditAutoScenes(enable) {
     }
 }
 
+function AddAutoScene(service_item) {
+    var $auto_scene = $("<div/>", { class: "auto-scene" }).append(
+        $("<button/>", {
+            class: "remove",
+            onclick: () => RemoveAutoScene
+        }),
+        $("<input/>", {
+            type: "text", spellcheck: true,
+            placeholder: "Service Item"
+        }).val(service_item),
+        $("<select/>")
+    );
+    $("#auto-scenes").append(
+        $auto_scene
+    );
+
+    PopulateOptions($auto_scene.find("select")[0], scene_names);
+}
+
 function PopulateOptions(select, options, canDisable) {
     if (canDisable !== false) {
         var el = document.createElement("option");
@@ -180,47 +241,46 @@ function SelectOption(selectElement, optionValToSelect) {
     }
 }
 
-function AddAutoScene(service_item) {
-    var div = document.createElement("div");
-    div.className = "auto-scene";
-
-    var button = document.createElement("button");
-    button.className = "remove";
-    button.onclick = RemoveAutoScene;
-    div.appendChild(button);
-
-    var input = document.createElement("input");
-    input.type = "text";
-    input.placeholder = "Service item";
-    if (typeof service_item === 'string' && service_item.length > 0) {
-        input.value = service_item;
-    }
-    div.appendChild(input);
-
-    var select = document.createElement("select");
-    PopulateOptions(select, scene_names);
-    div.appendChild(select);
-
-    document.getElementById("auto-scenes").appendChild(div);
-}
-
 function RemoveAutoScene(event) {
     event.currentTarget.parentElement.remove();
 }
 
-function EnableAddKeyMoment() {
-    obs.send("GetStreamingStatus").then((data) => {
-        var el = document.getElementById("add_key_moment");
-        var disabled = key_moments.length >= order_of_service.length || (data.recording === false && data.streaming === false);
-        el.disabled = disabled;
-        if (!disabled && key_moments.length > 0 && Math.trunc(new Date().getTime() / 1000) - (start_time + key_moments[key_moments.length - 1].timecode) < 10) {
-            el.disabled = true;
-            setTimeout(
-                function () {
-                    EnableAddKeyMoment();
-                }, ((new Date().getTime() / 1000) - start_time + key_moments[key_moments.length - 1].timecode));
+var countdown_timeout = null;
+function EnableAddKeyMoment(countdown) {
+    if (key_moments.length < order_of_service.length) {
+        if (typeof countdown === 'number' && countdown > 0) {
+            $("#add_key_moment").attr("count-down", countdown);
+            if (countdown_timeout != null) {
+                clearTimeout(countdown_timeout);
+            }
+            countdown_timeout = setTimeout(function () {
+                countdown--;
+                EnableAddKeyMoment(countdown);
+            }, (1000));
         }
-    });
+        else {
+            if (countdown_timeout != null) {
+                clearTimeout(countdown_timeout);
+            }
+            countdown_timeout = null;
+            $("#add_key_moment").removeAttr('count-down');
+            obs.send("GetStreamingStatus").then((data) => {
+                var el = document.getElementById("add_key_moment");
+                var disabled = (data.recording === false && data.streaming === false);
+                el.disabled = disabled;
+                if (!disabled && key_moments.length > 0) {
+                    var key_moment_duration = Math.trunc((start_time + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
+                    if (key_moment_duration > 0 && key_moment_duration <= 10) {
+                        el.disabled = true;
+                        EnableAddKeyMoment(Math.trunc((start_time + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
+                    }
+                }
+            });
+        }
+    } else {
+        $("#add_key_moment").attr("disabled", true);
+        $("#add_key_moment").removeAttr('count-down');
+    }
 }
 
 function EnableResetKeyMoments() {
@@ -240,11 +300,13 @@ function EnableResetKeyMoments() {
 }
 
 function AddKeyMoment(timecode) {
-    if (key_moments.length < order_of_service.length) {
+    if (key_moments.length < order_of_service.length && order_of_service[key_moments.length].length > 0) {
         if (key_moments.length > 0) {
-            document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
+            $("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
         }
-        document.getElementById("order-of-service").children[key_moments.length].setAttribute("selected", "selected");
+        $("#order-of-service li:nth-child(" + (key_moments.length + 1) + ")").attr("selected", "selected");
+        $("#order-of-service li:nth-child(" + (key_moments.length + 1) + ") input").attr("disabled", true);
+
         var el = document.getElementById("key-moments");
         if (typeof timecode !== 'number') {
             var timecode = Math.trunc(new Date().getTime() / 1000) - start_time;
@@ -259,11 +321,8 @@ function AddKeyMoment(timecode) {
         window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
         EnableResetKeyMoments();
 
-        document.getElementById("add_key_moment").disabled = "disabled";
-        setTimeout(
-            function () {
-                EnableAddKeyMoment();
-            }, 10000);
+        document.getElementById("add_key_moment").disabled = true;
+        EnableAddKeyMoment(10);
     }
 }
 
@@ -271,6 +330,7 @@ function Reset() {
     if (key_moments.length > 0) {
         document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
     }
+    $("#order-of-service input").attr("disabled", false);
     window.localStorage.removeItem("key-moments");
     document.getElementById("key-moments").value = "";
 

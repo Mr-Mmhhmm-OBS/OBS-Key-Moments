@@ -16,11 +16,40 @@ h1 {
     margin: 0;
 }
 
-ol {
+ol#order-of-service {
     margin: 0;
-    list-style-position: inside;
-    padding: 0;
+    padding-left: 1.5em;
 }
+
+    ol#order-of-service li[selected]{
+        margin-left: 0.5em;
+    }
+    ol#order-of-service li[selected] input {
+        background-color: #333;
+    }
+
+    ol#order-of-service li input {
+        background-color: transparent;
+        border: none;
+        width: 100%;
+        padding: 0;
+        user-select: none;
+    }
+
+        ol#order-of-service li input:not([disabled]):hover {
+            background-color: #191919;
+        }
+
+    ol#order-of-service li button.additem{
+        display: none;
+    }
+
+    ol#order-of-service li[selected] button.additem {
+        display: block;
+        width: 2em;
+        text-align: center;
+        padding: 0;
+    }
 
 h1, p, li, button {
     user-select: none;
@@ -34,12 +63,6 @@ h1, p, li, button, textarea, input[type=text], select {
 
 p, li, button, textarea {
     font-size: 12px;
-}
-
-#order-of-service [selected] {
-    background-color: #333;
-    margin: 0 0.5em;
-    padding-left: 5px;
 }
 
 button {
@@ -64,7 +87,7 @@ button {
 
 #service-editor textarea, #key-moments {
     display: block;
-    background-color: #383838;
+    background-color: #454545;
     resize: none;
     width: 90%;
     margin: 5px auto;
@@ -75,11 +98,11 @@ button {
     min-height: 5em;
 }
 
-#key-moments[highlight] {
-    border-color: #3f66;
-}
+    #key-moments[highlight] {
+        border-color: #3f66;
+    }
 
-#reset-key-moments[highlight]{
+#reset-key-moments[highlight] {
     background-color: #9009;
 }
 
@@ -128,12 +151,16 @@ button {
     flex: 0;
 }
 
-.auto-scene{
+.auto-scene {
     display: flex;
     flex-direction: row;
 }
 
-.auto-scene .remove:after {
-    content: "-";
-    padding: 0 0.5em;
+    .auto-scene .remove:after {
+        content: "-";
+        padding: 0 0.5em;
+    }
+
+#add_key_moment[count-down]:after {
+    content: " (" attr(count-down) ")";
 }
