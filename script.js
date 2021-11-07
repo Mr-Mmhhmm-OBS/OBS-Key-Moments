@@ -135,24 +135,22 @@ window.onload = function (event) {
     if (typeof value === 'string' && value.length > 0) {
         auto_scenes = JSON.parse(value);
         for (var service_item in auto_scenes) {
-            $("#service-items").append(
-                $("<option/>", { value: service_item }).html(service_item)
-            );
             AddAutoScene(service_item);
         }
     }
     //document.getElementById("text").innerHTML = window.obsstudio.pluginVersion;
 
     function CreateServiceItem(item, index) {
-        return $("<li/>").append(
+        $el = $("<li/>").append(
             $("<input/>", {
                 type: "text",
                 spellcheck: true,
-                list: "service-items",
                 disabled: typeof item === 'string' && item.length > 0 && typeof index === 'number' && key_moments.length > index
             }).val(item),
             $("<button/>", { class: "additem" }).html("+")
         );
+        autocomplete($el.find("input"));
+        return $el;
     }
 }
 

@@ -1,8 +1,6 @@
 body {
     background-color: #242424;
     margin: 0.25em 0.5em;
-    display: flex;
-    flex-direction: column;
     position: absolute;
     top: 0;
     bottom: 0;
@@ -21,35 +19,56 @@ ol#order-of-service {
     padding-left: 1.5em;
 }
 
-    ol#order-of-service li[selected]{
-        margin-left: 0.5em;
-    }
-    ol#order-of-service li[selected] input {
-        background-color: #333;
+    ol#order-of-service li {
+        position: relative;
     }
 
-    ol#order-of-service li input {
-        background-color: transparent;
-        border: none;
-        width: 100%;
-        padding: 0;
-        user-select: none;
-    }
-
-        ol#order-of-service li input:not([disabled]):hover {
-            background-color: #191919;
+        ol#order-of-service li[selected] {
+            margin-left: 0.5em;
         }
 
-    ol#order-of-service li button.additem{
-        display: none;
+            ol#order-of-service li[selected] input {
+                background-color: #333;
+            }
+
+        ol#order-of-service li input {
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            padding: 0;
+            user-select: none;
+        }
+
+            ol#order-of-service li input:not([disabled]):hover {
+                background-color: #191919;
+            }
+
+        ol#order-of-service li button.additem {
+            display: none;
+        }
+
+        ol#order-of-service li[selected] button.additem {
+            display: block;
+            width: 2em;
+            text-align: center;
+            padding: 0;
+        }
+
+#autocomplete-list {
+    position: absolute;
+    background-color: #333;
+    z-index: 1;
+}
+
+    #autocomplete-list > div {
+        padding: 0 1em;
     }
 
-    ol#order-of-service li[selected] button.additem {
-        display: block;
-        width: 2em;
-        text-align: center;
-        padding: 0;
-    }
+.autocomplete-active, .autocomplete-items > div:hover {
+    /*when navigating through the items using the arrow keys:*/
+    background-color: DodgerBlue !important;
+    color: #ffffff;
+}
 
 h1, p, li, button {
     user-select: none;
@@ -85,16 +104,13 @@ button {
         color: #777;
     }
 
-#service-editor textarea, #key-moments {
+#key-moments {
     display: block;
     background-color: #454545;
-    resize: none;
+    resize: vertical;
     width: 90%;
     margin: 5px auto;
     border-color: black;
-    -ms-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
     min-height: 5em;
 }
 
