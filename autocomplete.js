@@ -11,35 +11,36 @@ function autocomplete($inp) {
     }).on("keydown", function (e) {
         /*execute a function presses a key on the keyboard:*/
         var x = document.getElementById(this.id + "autocomplete-list");
-        if (x) x = x.getElementsByTagName("div");
-
-        switch (e.keyCode) {
-            case 9:
-            /*If the TAB key is pressed, prevent the form from being submitted,*/
-            case 13:
-                /*If the ENTER key is pressed, prevent the form from being submitted,*/
-                e.preventDefault();
-                if (currentFocus > -1) {
-                    /*and simulate a click on the "active" item:*/
-                    if (x) {
-                        x[currentFocus].click();
-                        e.stopPropagation();
-                    }
+        if (x) {
+            x = x.getElementsByTagName("div");
+            if (x.length) {
+                switch (e.keyCode) {
+                    case 9:
+                    /*If the TAB key is pressed, prevent the form from being submitted,*/
+                    case 13:
+                        /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                        if (currentFocus > -1) {
+                            /*and simulate a click on the "active" item:*/
+                            e.preventDefault();
+                            x[currentFocus].click();
+                            e.stopPropagation();
+                        }
+                        break;
+                    case 38:
+                        /*If the arrow UP key is pressed, decrease the currentFocus variable:*/
+                        currentFocus--;
+                        /*and and make the current item more visible:*/
+                        addActive(x);
+                        break;
+                    case 40:
+                        /*If the arrow DOWN key is pressed, increase the currentFocus variable:*/
+                        currentFocus++;
+                        /*and and make the current item more visible:*/
+                        addActive(x);
+                        break;
+                    default:
                 }
-                break;
-            case 38:
-                /*If the arrow UP key is pressed, decrease the currentFocus variable:*/
-                currentFocus--;
-                /*and and make the current item more visible:*/
-                addActive(x);
-                break;
-            case 40:
-                /*If the arrow DOWN key is pressed, increase the currentFocus variable:*/
-                currentFocus++;
-                /*and and make the current item more visible:*/
-                addActive(x);
-                break;
-            default:
+            }
         }
     }).on("blur", function (e) {
         setTimeout(() => closeAllLists(e.currentTarget), 100);

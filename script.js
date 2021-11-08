@@ -172,7 +172,7 @@ window.onload = function (event) {
                 "auto-scene": auto_scenes[item],
                 text: item
             }),
-            $("<button/>", { class: "additem" }).html("+")
+            $("<button/>", { class: "additem", tabindex:-1 }).html("+")
         );
         autocomplete($el.find(".service-item"));
         return $el;
