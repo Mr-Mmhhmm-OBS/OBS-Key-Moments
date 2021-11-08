@@ -65,39 +65,68 @@ window.onload = function (event) {
         order_of_service.splice(index + 1, 0, "");
         var $el = CreateServiceItem("", index);
         $(e.currentTarget.parentElement).after($el);
-        $el.find("input").focus();
-    }).on('keydown', "input[type=text]", (e) => {
+        $el.find(".service-item").focus();
+    }).on('keydown', ".service-item", (e) => {
         switch (e.key) {
             case 'Enter':
-                if (e.currentTarget.value.length > 0) {
+                if (e.currentTarget.innerText.length > 0) {
                     var index = IndexOfElement(e.currentTarget.parentElement);
-                    order_of_service.splice(index, 0, "");
-                    var $el = CreateServiceItem("", index);
-                    $(e.currentTarget.parentElement).after($el);
-                    $el.find("input").focus();
+                    if (e.currentTarget.innerText.length > 1 && document.getSelection().getRangeAt(0).endOffset > 1) {
+                        order_of_service.splice(index + 1, 0, "");
+                        var $el = CreateServiceItem("", index + 1);
+                        $(e.currentTarget.parentElement).after($el);
+                        $el.find(".service-item").focus();
+                    } else {
+                        order_of_service.splice(index, 0, "");
+                        var $el = CreateServiceItem("", index);
+                        $(e.currentTarget.parentElement).before($el);
+                        $el.find(".service-item").focus();
+                    }
                 } else {
                     e.currentTarget.blur();
                 }
                 break;
             case 'Backspace':
-                if (e.currentTarget.value.length === 0) {
+                if (e.currentTarget.innerText.length === 0) {
                     e.preventDefault();
-                    $(e.currentTarget.parentElement.previousSibling).find("input").focus();
+                    var $el = $(e.currentTarget.parentElement.previousSibling).find(".service-item");
+                    $el.focus();
+
+                    // Set carot to end of text
+                    var range = document.createRange();
+                    range.setStart($el[0].childNodes[0], $el.text().length);
+                    range.collapse(true);
+                    var sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
                 }
                 break;
             default:
         }
-    }).on("blur", "input[type=text]", function (e) {
+    }).on("focus", ".service-item", function (e) {
+        e.currentTarget.removeAttribute("auto-scene");
+    }).on("blur", ".service-item", function (e) {
         var index = IndexOfElement(e.currentTarget.parentElement);
-        order_of_service[index] = e.currentTarget.value;
+        var value = e.currentTarget.innerText;
+        order_of_service[index] = value;
         window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
-        if (e.currentTarget.value.length === 0 && order_of_service.length > 1) {
+        if (value.length === 0 && order_of_service.length > 1) {
             // Remove empty service item
             e.currentTarget.parentElement.remove();
             order_of_service.splice(index, 1);
+        } else {
+            e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value] === 'string' ? auto_scenes[value] : "");
         }
         EnableAddKeyMoment();
     });
+
+    var value = window.localStorage.getItem("auto-scenes");
+    if (typeof value === 'string' && value.length > 0) {
+        auto_scenes = JSON.parse(value);
+        for (var service_item in auto_scenes) {
+            AddAutoScene(service_item);
+        }
+    }
 
     var value = window.localStorage.getItem("key-moments");
     if (typeof value === 'string' && value.length > 0) {
@@ -131,25 +160,21 @@ window.onload = function (event) {
         document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
     }
 
-    var value = window.localStorage.getItem("auto-scenes");
-    if (typeof value === 'string' && value.length > 0) {
-        auto_scenes = JSON.parse(value);
-        for (var service_item in auto_scenes) {
-            AddAutoScene(service_item);
-        }
-    }
     //document.getElementById("text").innerHTML = window.obsstudio.pluginVersion;
 
     function CreateServiceItem(item, index) {
+        var hasItem = typeof item === 'string' && item.length > 0;
         $el = $("<li/>").append(
-            $("<input/>", {
-                type: "text",
+            $("<span/>", {
+                class: "service-item",
                 spellcheck: true,
-                disabled: typeof item === 'string' && item.length > 0 && typeof index === 'number' && key_moments.length > index
-            }).val(item),
+                contentEditable: !hasItem || (typeof index === 'number' && key_moments.length <= index),
+                "auto-scene": auto_scenes[item],
+                text: item
+            }),
             $("<button/>", { class: "additem" }).html("+")
         );
-        autocomplete($el.find("input"));
+        autocomplete($el.find(".service-item"));
         return $el;
     }
 }
@@ -191,6 +216,10 @@ function EditAutoScenes(enable) {
             }
         }
         window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
+        for (var el of $("#order-of-service .service-item")) {
+            var value = el.innerText;
+            el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value] === 'string' ? auto_scenes[value] : "");
+        }
     }
 }
 
@@ -303,7 +332,7 @@ function AddKeyMoment(timecode) {
             $("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
         }
         $("#order-of-service li:nth-child(" + (key_moments.length + 1) + ")").attr("selected", "selected");
-        $("#order-of-service li:nth-child(" + (key_moments.length + 1) + ") input").attr("disabled", true);
+        $("#order-of-service li:nth-child(" + (key_moments.length + 1) + ") .service-item").attr("contentEditable", false);
 
         var el = document.getElementById("key-moments");
         if (typeof timecode !== 'number') {
@@ -328,7 +357,7 @@ function Reset() {
     if (key_moments.length > 0) {
         document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
     }
-    $("#order-of-service input").attr("disabled", false);
+    $("#order-of-service .service-item").attr("contentEditable", true);
     window.localStorage.removeItem("key-moments");
     document.getElementById("key-moments").value = "";
 

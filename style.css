@@ -14,45 +14,61 @@ h1 {
     margin: 0;
 }
 
-ol#order-of-service {
+#order-of-service {
     margin: 0;
     padding-left: 1.5em;
 }
 
-    ol#order-of-service li {
+    #order-of-service li {
         position: relative;
     }
 
-        ol#order-of-service li[selected] {
+        #order-of-service li[selected] {
             margin-left: 0.5em;
         }
 
-            ol#order-of-service li[selected] input {
+            #order-of-service li[selected] .service-item {
                 background-color: #333;
             }
 
-        ol#order-of-service li input {
-            background-color: transparent;
-            border: none;
-            width: 100%;
-            padding: 0;
-            user-select: none;
+    #order-of-service .service-item {
+        display: inline-block;
+        background-color: transparent;
+        border: none;
+        width: 100%;
+        padding: 0;
+        user-select: none;
+        font-weight: bolder;
+        white-space: nowrap;
+    }
+
+        #order-of-service .service-item[contentEditable=true] {
+            cursor: text;
         }
 
-            ol#order-of-service li input:not([disabled]):hover {
-                background-color: #191919;
-            }
-
-        ol#order-of-service li button.additem {
-            display: none;
+        #order-of-service .service-item[contentEditable=true]:hover {
+            background-color: #191919;
         }
 
-        ol#order-of-service li[selected] button.additem {
-            display: block;
-            width: 2em;
-            text-align: center;
-            padding: 0;
+        #order-of-service .service-item[auto-scene]:after {
+            content: attr(auto-scene);
+            display: inline-block;
+            margin-left: 0.5em;
+            font-style: italic;
+            font-weight: 100;
+            float: right;
         }
+
+    #order-of-service button.additem {
+        display: none;
+    }
+
+    #order-of-service li[selected] button.additem {
+        display: block;
+        width: 2em;
+        text-align: center;
+        padding: 0;
+    }
 
 #autocomplete-list {
     position: absolute;
@@ -74,7 +90,7 @@ h1, p, li, button {
     user-select: none;
 }
 
-h1, p, li, button, textarea, input[type=text], select {
+h1, p, li, button, textarea, input[type=text], select, span {
     color: white;
     font-weight: 100;
     font-family: Calibri;

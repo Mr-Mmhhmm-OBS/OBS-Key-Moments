@@ -13,7 +13,7 @@
     <!--<button onclick="EditService(true);">Edit Order of Service</button>-->
     <button onclick="EditAutoScenes(true);">Edit Auto-Scenes</button>
     <h1>Key Moments</h1>
-    <textarea id="key-moments" disabled="disabled"></textarea>
+    <textarea id="key-moments" readonly="readonly" onclick="this.focus(); this.select();"></textarea>
     <button onclick="AddKeyMoment();" id="add_key_moment">Add Key-Moment</button>
     <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
 
