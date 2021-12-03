@@ -59,7 +59,7 @@ obs.connect().then(() => {
     });
 });
 
-window.onload = function (event) {
+window.onload = function () {
     $("#order-of-service").on("click", "li[selected] button.additem", function (e) {
         var index = IndexOfElement(e.currentTarget.parentElement);
         order_of_service.splice(index + 1, 0, "");
@@ -226,8 +226,9 @@ function EditAutoScenes(enable) {
 function AddAutoScene(service_item) {
     var $auto_scene = $("<div/>", { class: "auto-scene" }).append(
         $("<button/>", {
-            class: "remove",
-            onclick: () => RemoveAutoScene
+            class: "remove"
+        }).on('click', () => {
+            event.currentTarget.parentElement.remove();
         }),
         $("<input/>", {
             type: "text", spellcheck: true,
@@ -266,10 +267,6 @@ function SelectOption(selectElement, optionValToSelect) {
             break;
         }
     }
-}
-
-function RemoveAutoScene(event) {
-    event.currentTarget.parentElement.remove();
 }
 
 var countdown_timeout = null;

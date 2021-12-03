@@ -139,9 +139,7 @@ button {
 }
 
 .menu {
-    display: flex;
-    flex-direction: column;
-    position: fixed;
+    position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
@@ -149,11 +147,6 @@ button {
 }
 
     .menu > div {
-        display: flex;
-        flex-direction: column;
-        -ms-flex: 1;
-        -webkit-flex: 1;
-        flex: 1;
         margin: 10px;
         padding: 10px;
         background-color: #252525f6;
