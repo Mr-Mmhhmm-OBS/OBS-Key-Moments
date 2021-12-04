@@ -24,38 +24,42 @@ var auto_scenes = {};
 var scene_names = [];
 
 const obs = new OBSWebSocket();
+obs.on('StreamStarted', data => {
+    if (key_moments.length === 0) {
+        start_time = Math.trunc(new Date().getTime() / 1000);
+        AddKeyMoment(0);
+        window.localStorage.setItem("start-time", start_time);
+    } else {
+        EnableAddKeyMoment();
+        EnableResetKeyMoments();
+    }
+});
+obs.on('StreamStopped', data => {
+    EnableAddKeyMoment();
+    EnableResetKeyMoments();
+});
+obs.on('RecordingStarted', data => {
+    if (key_moments.length === 0) {
+        start_time = Math.trunc(new Date().getTime() / 1000);
+        AddKeyMoment(0);
+        window.localStorage.setItem("start-time", start_time);
+    } else {
+        EnableAddKeyMoment();
+        EnableResetKeyMoments();
+    }
+});
+obs.on('RecordingStopped', data => {
+    EnableAddKeyMoment();
+    EnableResetKeyMoments();
+});
+obs.on("SwitchScenes", data => {
+    EnableActivateScene(data.sceneName);
+});
 obs.connect().then(() => {
     EnableAddKeyMoment();
     EnableResetKeyMoments();
-
-    obs.on('StreamStarted', data => {
-        if (key_moments.length === 0) {
-            start_time = Math.trunc(new Date().getTime() / 1000);
-            AddKeyMoment(0);
-            window.localStorage.setItem("start-time", start_time);
-        } else {
-            EnableAddKeyMoment();
-            EnableResetKeyMoments();
-        }
-
-    });
-    obs.on('StreamStopped', data => {
-        EnableAddKeyMoment();
-        EnableResetKeyMoments();
-    });
-    obs.on('RecordingStarted', data => {
-        if (key_moments.length === 0) {
-            start_time = Math.trunc(new Date().getTime() / 1000);
-            AddKeyMoment(0);
-            window.localStorage.setItem("start-time", start_time);
-        } else {
-            EnableAddKeyMoment();
-            EnableResetKeyMoments();
-        }
-    });
-    obs.on('RecordingStopped', data => {
-        EnableAddKeyMoment();
-        EnableResetKeyMoments();
+    obs.send("GetCurrentScene").then(data => {
+        EnableActivateScene(data.name);
     });
 });
 
@@ -172,7 +176,7 @@ window.onload = function () {
                 "auto-scene": auto_scenes[item],
                 text: item
             }),
-            $("<button/>", { class: "additem", tabindex:-1 }).html("+")
+            $("<button/>", { class: "additem", tabindex: -1 }).html("+")
         );
         autocomplete($el.find(".service-item"));
         return $el;
@@ -337,7 +341,7 @@ function AddKeyMoment(timecode) {
         }
         var service_item = order_of_service[key_moments.length];
         el.value += (key_moments.length > 0 ? "\n" : "") + timecode.formatDuration() + " " + service_item;
-        el.scrollTop = el.scrollHeight
+        el.scrollTop = el.scrollHeight;
         if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
             obs.send('SetCurrentScene', { 'scene-name': auto_scenes[service_item] });
         }
@@ -348,6 +352,26 @@ function AddKeyMoment(timecode) {
         document.getElementById("add_key_moment").disabled = true;
         EnableAddKeyMoment(10);
     }
+}
+
+function ActivateScene() {
+    if (key_moments.length <= order_of_service.length) {
+        var service_item = order_of_service[Math.max(0, key_moments.length - 1)];
+        if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
+            obs.send('SetCurrentScene', { 'scene-name': auto_scenes[service_item] });
+        }
+    }
+}
+
+function EnableActivateScene(sceneName) {
+    var disabled = true;
+    if (key_moments.length <= order_of_service.length) {
+        var service_item = order_of_service[Math.max(0, key_moments.length - 1)];
+        if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
+            disabled = auto_scenes[service_item] === sceneName;
+        }
+    }
+    $("#activate-scene").attr('disabled', disabled);
 }
 
 function Reset() {
@@ -363,4 +387,7 @@ function Reset() {
     }
     EnableAddKeyMoment();
     EnableResetKeyMoments();
+    obs.send("GetCurrentScene").then(data => {
+        EnableActivateScene(data.name);
+    });
 }
