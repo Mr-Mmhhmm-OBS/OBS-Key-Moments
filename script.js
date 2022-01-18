@@ -89,6 +89,7 @@ window.onload = function () {
                 } else {
                     e.currentTarget.blur();
                 }
+                e.preventDefault();
                 break;
             case 'Backspace':
                 if (e.currentTarget.innerText.length === 0) {
