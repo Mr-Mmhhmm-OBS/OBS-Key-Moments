@@ -69,13 +69,7 @@ obs.connect().then(() => {
 });
 
 window.onload = function () {
-	$("#order-of-service").on("click", "li[selected] button.additem", function (e) {
-		var index = IndexOfElement(e.currentTarget.parentElement);
-		order_of_service.splice(index + 1, 0, "");
-		var $el = CreateServiceItem("", index);
-		$(e.currentTarget.parentElement).after($el);
-		$el.find(".service-item").focus();
-	}).on('keydown', ".service-item", (e) => {
+	$("#order-of-service").on('keydown', ".service-item", (e) => {
 		switch (e.key) {
 			case 'Enter':
 				if (e.currentTarget.innerText.length > 0) {
@@ -124,9 +118,21 @@ window.onload = function () {
 			// Remove empty service item
 			e.currentTarget.parentElement.remove();
 			order_of_service.splice(index, 1);
+			key_moments[index].name = order_of_service[index];
 		} else {
 			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value] === 'string' ? auto_scenes[value] : "");
+			key_moments[index].name = value;
 		}
+
+		if (index < key_moments.length) {
+			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+			var key_moments_text = "";
+			for (var i = 0; i < key_moments.length; i++) {
+				key_moments_text += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
+			}
+			$("#key-moments").val(key_moments_text);
+		}
+
 		EnableAddKeyMoment();
 	});
 
@@ -173,16 +179,14 @@ window.onload = function () {
 	//document.getElementById("text").innerHTML = window.obsstudio.pluginVersion;
 
 	function CreateServiceItem(item, index) {
-		var hasItem = typeof item === 'string' && item.length > 0;
 		$el = $("<li/>").append(
 			$("<span/>", {
 				class: "service-item",
 				spellcheck: true,
-				contentEditable: !hasItem || (typeof index === 'number' && key_moments.length <= index),
+				contentEditable: true,
 				"auto-scene": auto_scenes[item],
 				text: item
-			}),
-			$("<button/>", { class: "additem", tabindex: -1 }).html("+")
+			})
 		);
 		autocomplete($el.find(".service-item"));
 		return $el;
@@ -323,7 +327,6 @@ function AddKeyMoment() {
 			$("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
 		}
 		$("#order-of-service li:nth-child(" + (key_moments.length + 1) + ")").attr("selected", "selected");
-		$("#order-of-service li:nth-child(" + (key_moments.length + 1) + ") .service-item").attr("contentEditable", false);
 
 		var el = document.getElementById("key-moments");
 		var timecode = 0;
@@ -360,7 +363,6 @@ function EnableUndoKeyMoment() {
 function UndoKeyMoment() {
 	if (key_moments.length > 0 && confirm("Are you sure you want to undo the last key-moment?")) {
 		$("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
-		$("#order-of-service li:nth-child(" + key_moments.length + ") .service-item").attr("contentEditable", true);
 
 		key_moments.splice(key_moments.length - 1, 1);
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
@@ -410,7 +412,6 @@ function Reset() {
 			if (key_moments.length > 0) {
 				document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
 			}
-			$("#order-of-service .service-item").attr("contentEditable", true);
 			window.localStorage.removeItem("key-moments");
 			document.getElementById("key-moments").value = "";
 

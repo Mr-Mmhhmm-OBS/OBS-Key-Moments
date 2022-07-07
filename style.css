@@ -59,17 +59,6 @@ h1 {
             float: right;
         }
 
-    #order-of-service button.additem {
-        display: none;
-    }
-
-    #order-of-service li[selected] button.additem {
-        display: block;
-        width: 2em;
-        text-align: center;
-        padding: 0;
-    }
-
 #autocomplete-list {
     position: absolute;
     background-color: #333;
