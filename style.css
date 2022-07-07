@@ -42,11 +42,11 @@ h1 {
         white-space: nowrap;
     }
 
-        #order-of-service .service-item[contentEditable=true] {
+        #order-of-service .service-item {
             cursor: text;
         }
 
-        #order-of-service .service-item[contentEditable=true]:hover {
+        #order-of-service .service-item:hover {
             background-color: #191919;
         }
 

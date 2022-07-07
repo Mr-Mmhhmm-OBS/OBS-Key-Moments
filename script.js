@@ -57,14 +57,14 @@ obs.on('RecordingStopped', data => {
 	EnableResetKeyMoments();
 });
 obs.on("SwitchScenes", data => {
-	EnableActivateScene(data.sceneName);
+	EnableSetCurrentScene(data.sceneName);
 });
 obs.connect().then(() => {
 	EnableAddKeyMoment();
 	EnableUndoKeyMoment();
 	EnableResetKeyMoments();
 	obs.send("GetCurrentScene").then(data => {
-		EnableActivateScene(data.name);
+		EnableSetCurrentScene(data.name);
 	});
 });
 
@@ -340,21 +340,19 @@ function AddKeyMoment() {
 		var service_item = order_of_service[key_moments.length];
 		el.value += (key_moments.length > 0 ? "\n" : "") + timecode.formatDuration() + " " + service_item;
 		el.scrollTop = el.scrollHeight;
-		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
-			obs.send('SetCurrentScene', { 'scene-name': auto_scenes[service_item] });
-		}
 		key_moments.push({ name: service_item, timecode: timecode });
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+		SetCurrentScene();
 		EnableResetKeyMoments();
 
 		document.getElementById("add_key_moment").disabled = true;
-		EnableAddKeyMoment(10);
+		EnableAddKeyMoment(Math.min(start_time - Math.trunc(new Date().getTime() / 1000), 10));
 		EnableUndoKeyMoment();
 	}
 }
 
 function EnableUndoKeyMoment() {
-	if (key_moments.length > 0) {
+	if (key_moments.length > 1) {
 		obs.send("GetStreamingStatus").then((data) => {
 			var disabled = (data.recording === false && data.streaming === false);
 			$("#undo-key-moment").prop("disabled", disabled);
@@ -379,17 +377,14 @@ function UndoKeyMoment() {
 		}
 		$("#key-moments").val(key_moments_text);
 
-		if (typeof auto_scenes[key_moments[key_moments.length - 1].name] === 'string' && auto_scenes[key_moments[key_moments.length - 1].name].length > 0) {
-			obs.send('SetCurrentScene', { 'scene-name': auto_scenes[key_moments[key_moments.length - 1].name] });
-		}
-
+		SetCurrentScene();
 		EnableAddKeyMoment();
 	}
 
 	EnableUndoKeyMoment();
 }
 
-function ActivateScene() {
+function SetCurrentScene() {
 	if (key_moments.length <= order_of_service.length) {
 		var service_item = order_of_service[Math.max(0, key_moments.length - 1)];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
@@ -398,7 +393,7 @@ function ActivateScene() {
 	}
 }
 
-function EnableActivateScene(sceneName) {
+function EnableSetCurrentScene(sceneName) {
 	var disabled = true;
 	if (key_moments.length <= order_of_service.length) {
 		var service_item = order_of_service[Math.max(0, key_moments.length - 1)];
@@ -406,7 +401,7 @@ function EnableActivateScene(sceneName) {
 			disabled = auto_scenes[service_item] === sceneName;
 		}
 	}
-	$("#activate-scene").attr('disabled', disabled);
+	$("#set-current-scene").attr('disabled', disabled);
 }
 
 function Reset() {
@@ -425,23 +420,23 @@ function Reset() {
 			EnableAddKeyMoment();
 			EnableUndoKeyMoment();
 			EnableResetKeyMoments();
-			obs.send("GetCurrentScene").then(data => {
-				EnableActivateScene(data.name);
-			});
+			SetCurrentScene();
+
+			if (show_warning) {
+				AddKeyMoment();
+			}
 		}
 
 	});
 }
 
 function EnableResetKeyMoments() {
-	obs.send("GetStreamingStatus").then((data) => {
-		var el = document.getElementById("reset-key-moments");
-		if (key_moments.length > 0) {
-			document.getElementById("key-moments").setAttribute("highlight", "highlight");
-			el.setAttribute("highlight", "highlight");
-		} else {
-			document.getElementById("key-moments").removeAttribute("highlight");
-			el.removeAttribute("highlight");
-		}
-	});
+	var el = document.getElementById("reset-key-moments");
+	if (key_moments.length > 0) {
+		document.getElementById("key-moments").setAttribute("highlight", "highlight");
+		el.setAttribute("highlight", "highlight");
+	} else {
+		document.getElementById("key-moments").removeAttribute("highlight");
+		el.removeAttribute("highlight");
+	}
 }
