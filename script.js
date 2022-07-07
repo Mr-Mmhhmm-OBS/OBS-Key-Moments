@@ -114,22 +114,26 @@ window.onload = function () {
 		var value = e.currentTarget.innerText;
 		order_of_service[index] = value;
 		window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
+
 		if (value.length === 0 && order_of_service.length > 1) {
 			// Remove empty service item
 			e.currentTarget.parentElement.remove();
 			order_of_service.splice(index, 1);
-			key_moments[index].name = order_of_service[index];
+			for (var i = index; i < key_moments.length; i++) {
+				key_moments[i].name = order_of_service[i];
+			}
 		} else {
 			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value] === 'string' ? auto_scenes[value] : "");
 			key_moments[index].name = value;
 		}
 
 		if (index < key_moments.length) {
-			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 			var key_moments_text = "";
 			for (var i = 0; i < key_moments.length; i++) {
+				key_moments[i].name = order_of_service[i];
 				key_moments_text += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
 			}
+			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 			$("#key-moments").val(key_moments_text);
 		}
 
