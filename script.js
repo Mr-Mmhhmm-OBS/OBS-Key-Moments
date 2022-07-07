@@ -31,11 +31,13 @@ obs.on('StreamStarted', data => {
 		window.localStorage.setItem("start-time", start_time);
 	} else {
 		EnableAddKeyMoment();
+		EnableUndoKeyMoment();
 		EnableResetKeyMoments();
 	}
 });
 obs.on('StreamStopped', data => {
 	EnableAddKeyMoment();
+	EnableUndoKeyMoment();
 	EnableResetKeyMoments();
 });
 obs.on('RecordingStarted', data => {
@@ -45,11 +47,13 @@ obs.on('RecordingStarted', data => {
 		window.localStorage.setItem("start-time", start_time);
 	} else {
 		EnableAddKeyMoment();
+		EnableUndoKeyMoment();
 		EnableResetKeyMoments();
 	}
 });
 obs.on('RecordingStopped', data => {
 	EnableAddKeyMoment();
+	EnableUndoKeyMoment();
 	EnableResetKeyMoments();
 });
 obs.on("SwitchScenes", data => {
@@ -57,6 +61,7 @@ obs.on("SwitchScenes", data => {
 });
 obs.connect().then(() => {
 	EnableAddKeyMoment();
+	EnableUndoKeyMoment();
 	EnableResetKeyMoments();
 	obs.send("GetCurrentScene").then(data => {
 		EnableActivateScene(data.name);
@@ -337,7 +342,45 @@ function AddKeyMoment() {
 
 		document.getElementById("add_key_moment").disabled = true;
 		EnableAddKeyMoment(10);
+		EnableUndoKeyMoment();
 	}
+}
+
+function EnableUndoKeyMoment() {
+	if (key_moments.length > 0) {
+		obs.send("GetStreamingStatus").then((data) => {
+			var disabled = (data.recording === false && data.streaming === false);
+			$("#undo-key-moment").prop("disabled", disabled);
+		});
+	} else {
+		$("#undo-key-moment").prop("disabled", true);
+	}
+}
+
+function UndoKeyMoment() {
+	if (key_moments.length > 0 && confirm("Are you sure you want to undo the last key-moment?")) {
+		$("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
+		$("#order-of-service li:nth-child(" + key_moments.length + ") .service-item").attr("contentEditable", true);
+
+		key_moments.splice(key_moments.length - 1, 1);
+		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+
+		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
+
+		var key_moments_text = "";
+		for (var i = 0; i < key_moments.length; i++) {
+			key_moments_text += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
+		}
+		$("#key-moments").val(key_moments_text);
+
+		if (typeof auto_scenes[key_moments[key_moments.length - 1].name] === 'string' && auto_scenes[key_moments[key_moments.length - 1].name].length > 0) {
+			obs.send('SetCurrentScene', { 'scene-name': auto_scenes[key_moments[key_moments.length - 1].name] });
+		}
+
+		EnableAddKeyMoment();
+	}
+
+	EnableUndoKeyMoment();
 }
 
 function ActivateScene() {
@@ -375,6 +418,7 @@ function Reset() {
 				key_moments.pop();
 			}
 			EnableAddKeyMoment();
+			EnableUndoKeyMoment();
 			EnableResetKeyMoments();
 			obs.send("GetCurrentScene").then(data => {
 				EnableActivateScene(data.name);

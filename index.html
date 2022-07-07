@@ -14,11 +14,14 @@
     <button onclick="EditAutoScenes(true);">Edit Auto-Scenes</button>
     <h1>Key Moments</h1>
     <textarea id="key-moments" readonly="readonly" onclick="this.focus(); this.select();"></textarea>
-    <div style="display:flex; flex-direction:row;">
+    <div class="row">
         <button onclick="AddKeyMoment();" id="add_key_moment">Add Key-Moment</button>
         <button onclick="ActivateScene();" id="activate-scene">Set Current Scene</button>
     </div>
-    <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
+    <div class="row">
+     <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
+     <button id="undo-key-moment" onclick="UndoKeyMoment();">Undo</button>
+    </div>
     <div id="auto-scenes-editor" class="menu" style="display:none;">
         <div>
             <h1>Auto Scenes</h1>

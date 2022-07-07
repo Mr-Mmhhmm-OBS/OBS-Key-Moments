@@ -186,6 +186,17 @@ button {
         padding: 0 0.5em;
     }
 
+.row {
+  display:flex; 
+  flex-direction:row;
+}
+
+#add_key_moment:enabled {
+ background-color: #229922;
+ color: #000;
+ font-weight: 600;
+}
+
 #add_key_moment[count-down]:after {
     content: " (" attr(count-down) ")";
 }
