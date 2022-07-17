@@ -123,7 +123,7 @@ window.onload = function () {
 				key_moments[i].name = order_of_service[i];
 			}
 		} else {
-			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value] === 'string' ? auto_scenes[value] : "");
+			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
 			key_moments[index].name = value;
 		}
 
@@ -188,7 +188,7 @@ window.onload = function () {
 				class: "service-item",
 				spellcheck: true,
 				contentEditable: true,
-				"auto-scene": auto_scenes[item],
+				"auto-scene": auto_scenes[item.split(" - ")[0]],
 				text: item
 			})
 		);
@@ -236,7 +236,7 @@ function EditAutoScenes(enable) {
 		window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
 		for (var el of $("#order-of-service .service-item")) {
 			var value = el.innerText;
-			el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value] === 'string' ? auto_scenes[value] : "");
+			el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
 		}
 	}
 }
@@ -386,7 +386,7 @@ function UndoKeyMoment() {
 
 function SetCurrentScene() {
 	if (key_moments.length <= order_of_service.length) {
-		var service_item = order_of_service[Math.max(0, key_moments.length - 1)];
+		var service_item = order_of_service[Math.max(0, key_moments.length - 1)].split(" - ")[0];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
 			obs.send('SetCurrentScene', { 'scene-name': auto_scenes[service_item] });
 		}
@@ -396,7 +396,7 @@ function SetCurrentScene() {
 function EnableSetCurrentScene(sceneName) {
 	var disabled = true;
 	if (key_moments.length <= order_of_service.length) {
-		var service_item = order_of_service[Math.max(0, key_moments.length - 1)];
+		var service_item = order_of_service[Math.max(0, key_moments.length - 1)].split(" - ")[0];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
 			disabled = auto_scenes[service_item] === sceneName;
 		}
