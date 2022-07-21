@@ -1,191 +1,199 @@
 body {
-    background-color: #242424;
-    margin: 0.25em 0.5em;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+   background-color: #242424;
+   margin: 0.25em 0.5em;
+   position: absolute;
+   top: 0;
+   bottom: 0;
+   left: 0;
+   right: 0;
 }
 
 h1 {
-    text-align: center;
-    font-size: 16px;
-    margin: 0;
+   text-align: center;
+   font-size: 16px;
+   margin: 0;
 }
 
 #order-of-service {
-    margin: 0;
-    padding-left: 1.5em;
+   margin: 0;
+   padding-left: 1.5em;
 }
 
-    #order-of-service li {
-        position: relative;
-    }
+   #order-of-service li {
+      position: relative;
+   }
 
-        #order-of-service li[selected] {
-            margin-left: 0.5em;
-        }
+      #order-of-service li[selected] {
+         margin-left: 0.5em;
+      }
 
-            #order-of-service li[selected] .service-item {
-                background-color: #333;
-            }
+         #order-of-service li[selected] .service-item {
+            background-color: #333;
+         }
 
-    #order-of-service .service-item {
-        display: inline-block;
-        background-color: transparent;
-        border: none;
-        width: 100%;
-        padding: 0;
-        user-select: none;
-        font-weight: bolder;
-        white-space: nowrap;
-    }
+   #order-of-service .service-item {
+      display: inline-block;
+      background-color: transparent;
+      border: none;
+      width: 100%;
+      padding: 0;
+      user-select: none;
+      font-weight: bolder;
+      white-space: nowrap;
+   }
 
-        #order-of-service .service-item {
-            cursor: text;
-        }
+   #order-of-service .service-item {
+      cursor: text;
+   }
 
-        #order-of-service .service-item:hover {
-            background-color: #191919;
-        }
+      #order-of-service .service-item:hover {
+         background-color: #191919;
+      }
 
-        #order-of-service .service-item[auto-scene]:after {
-            content: attr(auto-scene);
-            display: inline-block;
-            margin-left: 0.5em;
-            font-style: italic;
-            font-weight: 100;
-            float: right;
-        }
+      #order-of-service .service-item[auto-scene]:after {
+         content: attr(auto-scene);
+         display: inline-block;
+         margin-left: 0.5em;
+         font-style: italic;
+         font-weight: 100;
+         float: right;
+      }
 
 #autocomplete-list {
-    position: absolute;
-    background-color: #333;
-    z-index: 1;
+   position: absolute;
+   background-color: #333;
+   z-index: 1;
 }
 
-    #autocomplete-list > div {
-        padding: 0 1em;
-    }
+   #autocomplete-list > div {
+      padding: 0 1em;
+   }
 
 .autocomplete-active, .autocomplete-items > div:hover {
-    /*when navigating through the items using the arrow keys:*/
-    background-color: DodgerBlue !important;
-    color: #ffffff;
+   /*when navigating through the items using the arrow keys:*/
+   background-color: DodgerBlue !important;
+   color: #ffffff;
 }
 
-h1, p, li, button {
-    user-select: none;
+h1, p, li, button, label {
+   user-select: none;
 }
 
-h1, p, li, button, textarea, input[type=text], select, span {
-    color: white;
-    font-weight: 100;
-    font-family: Calibri;
+h1, p, li, button, textarea, input[type=text], select, span, label {
+   color: white;
+   font-weight: 100;
+   font-family: Calibri;
 }
+
+   input[type=radio]:enabled, label:not([disabled]) {
+      cursor: pointer;
+   }
+
+   label[disabled]{
+    color: #777;
+   }
 
 p, li, button, textarea {
-    font-size: 12px;
+   font-size: 12px;
 }
 
 button {
-    display: block;
-    margin: 1px;
-    width: 100%;
-    background-color: #454545;
-    border: none;
-    border-radius: 3px;
-    padding: 4px;
-    outline: none;
+   display: block;
+   margin: 1px;
+   width: 100%;
+   background-color: #454545;
+   border: none;
+   border-radius: 3px;
+   padding: 4px;
+   outline: none;
 }
 
-    button:hover {
-        background-color: #787878;
-    }
+   button:hover {
+      background-color: #787878;
+   }
 
-    button:disabled {
-        background-color: #2f2f2f;
-        color: #777;
-    }
+   button:disabled {
+      background-color: #2f2f2f;
+      color: #777;
+   }
 
 #key-moments {
-    display: block;
-    background-color: #454545;
-    resize: vertical;
-    width: 90%;
-    margin: 5px auto;
-    border-color: black;
-    min-height: 5em;
+   display: block;
+   background-color: #454545;
+   resize: vertical;
+   width: 90%;
+   margin: 5px auto;
+   border-color: black;
+   min-height: 5em;
 }
 
-    #key-moments[highlight] {
-        border-color: #3f66;
-    }
+   #key-moments[highlight] {
+      border-color: #3f66;
+   }
 
 #reset-key-moments[highlight] {
-    background-color: #9009;
+   background-color: #9009;
 }
 
 .menu {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+   position: absolute;
+   top: 0;
+   bottom: 0;
+   left: 0;
+   right: 0;
 }
 
-    .menu > div {
-        margin: 10px;
-        padding: 10px;
-        background-color: #252525f6;
-        border: 1px solid black;
-        border-radius: 10px;
-        min-height: fit-content;
-    }
+   .menu > div {
+      margin: 10px;
+      padding: 10px;
+      background-color: #252525f6;
+      border: 1px solid black;
+      border-radius: 10px;
+      min-height: fit-content;
+   }
 
-    .menu button.close {
-        margin-top: auto;
-    }
+   .menu button.close {
+      margin-top: auto;
+   }
 
 .auto-scene input[type=text], .auto-scene select {
-    -ms-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
-    background-color: #454545;
-    border: none;
-    border-radius: 3px;
-    padding: 2px;
-    margin: 1px;
+   -ms-flex: 1;
+   -webkit-flex: 1;
+   flex: 1;
+   background-color: #454545;
+   border: none;
+   border-radius: 3px;
+   padding: 2px;
+   margin: 1px;
 }
 
 .auto-scene button.remove {
-    -ms-flex: 0;
-    -webkit-flex: 0;
-    flex: 0;
+   -ms-flex: 0;
+   -webkit-flex: 0;
+   flex: 0;
 }
 
 .auto-scene {
-    display: flex;
-    flex-direction: row;
+   display: flex;
+   flex-direction: row;
 }
 
-    .auto-scene .remove:after {
-        content: "-";
-        padding: 0 0.5em;
-    }
+   .auto-scene .remove:after {
+      content: "-";
+      padding: 0 0.5em;
+   }
 
 .row {
-  display:flex; 
-  flex-direction:row;
+   display: flex;
+   flex-direction: row;
 }
 
 #add_key_moment:enabled {
- background-color: #229922;
- color: #000;
- font-weight: 600;
+   background-color: #229922;
+   color: #000;
+   font-weight: 600;
 }
 
 #add_key_moment[count-down]:after {
-    content: " (" attr(count-down) ")";
+   content: " (" attr(count-down) ")";
 }

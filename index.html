@@ -1,34 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="style.css">
-    <script type="text/javascript" src="jquery-3.6.0.js"></script>
-    <script type='text/javascript' src='obs-websocket.js'></script>
-    <script type="text/javascript" src="script.js"></script>
-    <script type="text/javascript" src="autocomplete.js"></script>
+   <link rel="stylesheet" href="style.css">
+   <script type="text/javascript" src="jquery-3.6.0.js"></script>
+   <script type='text/javascript' src='obs-websocket.js'></script>
+   <script type="text/javascript" src="script.js"></script>
+   <script type="text/javascript" src="autocomplete.js"></script>
 </head>
 <body>
-    <h1>Order of Service</h1>
-    <ol id="order-of-service"></ol>
-    <!--<button onclick="EditService(true);">Edit Order of Service</button>-->
-    <button onclick="EditAutoScenes(true);">Edit Auto-Scenes</button>
-    <h1>Key Moments</h1>
-    <textarea id="key-moments" readonly="readonly" onclick="this.focus(); this.select();"></textarea>
-    <div class="row">
-        <button onclick="AddKeyMoment();" id="add_key_moment">Add Key-Moment</button>
-        <button onclick="SetCurrentScene();" id="set-current-scene">Set Current Scene</button>
-    </div>
-    <div class="row">
-     <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
-     <button id="undo-key-moment" onclick="UndoKeyMoment();">Undo</button>
-    </div>
-    <div id="auto-scenes-editor" class="menu" style="display:none;">
-        <div>
-            <h1>Auto Scenes</h1>
-            <div id="auto-scenes"></div>
-            <button onclick="AddAutoScene();">+</button>
-            <button onclick="EditAutoScenes(false);" class="close">Close</button>
-        </div>
-    </div>
+   <h1>Order of Service</h1>
+   <ol id="order-of-service"></ol>
+   <!--<button onclick="EditService(true);">Edit Order of Service</button>-->
+   <button onclick="EditAutoScenes(true);">Edit Auto-Scenes</button>
+   <h1>Key Moments</h1>
+   <input type="radio" id="radio_streaming" value="streaming" name="timing" /><label for="radio_streaming">Streaming</label>
+   <input type="radio" id="radio_recording" value="recording" name="timing" /><label for="radio_recording">Recording</label>
+   <textarea id="key-moments" readonly="readonly" onclick="this.focus(); this.select();"></textarea>
+   <div class="row">
+      <button onclick="AddKeyMoment();" id="add_key_moment">Add Key-Moment</button>
+      <button onclick="SetCurrentScene();" id="set-current-scene">Set Current Scene</button>
+   </div>
+   <div class="row">
+      <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
+      <button id="undo-key-moment" onclick="UndoKeyMoment();">Undo</button>
+   </div>
+   <div id="auto-scenes-editor" class="menu" style="display:none;">
+      <div>
+         <h1>Auto Scenes</h1>
+         <div id="auto-scenes"></div>
+         <button onclick="AddAutoScene();">+</button>
+         <button onclick="EditAutoScenes(false);" class="close">Close</button>
+      </div>
+   </div>
 </body>
 </html>

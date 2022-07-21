@@ -5,7 +5,8 @@ Number.prototype.padStart = function (size) {
 }
 
 Number.prototype.formatDuration = function () {
-	return (Math.floor(this / 60 / 60) % 60).padStart(2) + ":" + (Math.floor(this / 60) % 60).padStart(2) + ":" + (this % 60).padStart(2);
+	value = Math.max(this, 0);
+	return (Math.floor(value / 60 / 60) % 60).padStart(2) + ":" + (Math.floor(value / 60) % 60).padStart(2) + ":" + (value % 60).padStart(2);
 }
 
 String.prototype.toSeconds = function () {
@@ -17,44 +18,54 @@ function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
 
-var start_time = Math.trunc(new Date().getTime() / 1000);
+const time_modes = { streaming: "streaming", recording: "recording" };
+var time_mode = time_modes.streaming;
+var start_time = {};
+start_time[time_modes.streaming] = null;
+start_time[time_modes.recording] = null;
 var order_of_service = [];
 var key_moments = [];
 var auto_scenes = {};
 var scene_names = [];
 
 const obs = new OBSWebSocket();
-obs.on('StreamStarted', data => {
-	if (key_moments.length === 0) {
-		start_time = Math.trunc(new Date().getTime() / 1000);
-		AddKeyMoment();
-		window.localStorage.setItem("start-time", start_time);
-	} else {
-		EnableAddKeyMoment();
-		EnableUndoKeyMoment();
-		EnableResetKeyMoments();
+
+function Start(mode) {
+	if (typeof time_modes[mode] === "string") {
+		start_time[mode] = Math.trunc(new Date().getTime() / 1000);
+		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
+		$("#radio_" + mode + ", [for=radio_" + mode + "]").attr("disabled", null);
+		if (time_mode != mode && start_time[time_mode] == null) {
+			SetTimeMode(mode);
+		}
+
+		if (key_moments.length === 0) {
+			AddKeyMoment();
+		} else {
+			EnableAddKeyMoment();
+			EnableUndoKeyMoment();
+			EnableResetKeyMoments();
+		}
 	}
+}
+
+function Stop() {
+	EnableAddKeyMoment();
+	EnableUndoKeyMoment();
+	EnableResetKeyMoments();
+}
+
+obs.on('StreamStarted', data => {
+	Start(time_modes.streaming);
 });
 obs.on('StreamStopped', data => {
-	EnableAddKeyMoment();
-	EnableUndoKeyMoment();
-	EnableResetKeyMoments();
+	Stop();
 });
 obs.on('RecordingStarted', data => {
-	if (key_moments.length === 0) {
-		start_time = Math.trunc(new Date().getTime() / 1000);
-		AddKeyMoment();
-		window.localStorage.setItem("start-time", start_time);
-	} else {
-		EnableAddKeyMoment();
-		EnableUndoKeyMoment();
-		EnableResetKeyMoments();
-	}
+	Start(time_modes.recording);
 });
 obs.on('RecordingStopped', data => {
-	EnableAddKeyMoment();
-	EnableUndoKeyMoment();
-	EnableResetKeyMoments();
+	Stop();
 });
 obs.on("SwitchScenes", data => {
 	EnableSetCurrentScene(data.sceneName);
@@ -128,16 +139,18 @@ window.onload = function () {
 		}
 
 		if (index < key_moments.length) {
-			var key_moments_text = "";
 			for (var i = 0; i < key_moments.length; i++) {
 				key_moments[i].name = order_of_service[i];
-				key_moments_text += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
 			}
 			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-			$("#key-moments").val(key_moments_text);
+			UpdateKeyMoments();
 		}
 
 		EnableAddKeyMoment();
+	});
+
+	$("input[type=radio][name=timing]").on("change", function (e) {
+		SetTimeMode(e.currentTarget.value);
 	});
 
 	var value = window.localStorage.getItem("auto-scenes");
@@ -148,16 +161,38 @@ window.onload = function () {
 		}
 	}
 
-	var value = window.localStorage.getItem("key-moments");
+	value = window.localStorage.getItem("start-time-streaming");
 	if (typeof value === 'string' && value.length > 0) {
-		key_moments = JSON.parse(value);
-		var el = document.getElementById("key-moments");
-		for (var i = 0; i < key_moments.length; i++) {
-			el.value += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
-		}
+		start_time[time_modes.streaming] = parseInt(value);
+	} else {
+		start_time[time_modes.streaming] = null;
 	}
 
-	var value = window.localStorage.getItem("order-of-service");
+	value = window.localStorage.getItem("start-time-recording");
+	if (typeof value === 'string' && value.length > 0) {
+		start_time[time_modes.recording] = parseInt(value);
+	} else {
+		start_time[time_modes.recording] = null;
+	}
+
+	value = window.localStorage.getItem("time-mode");
+	if (typeof value === 'string' && value.length > 0) {
+		time_mode = value;
+	} else {
+		time_mode = time_modes.streaming;
+	}
+
+	value = window.localStorage.getItem("key-moments");
+	if (typeof value === 'string' && value.length > 0) {
+		key_moments = JSON.parse(value);
+		UpdateKeyMoments();
+	}
+
+	$("#radio_streaming, [for=radio_streaming]").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 || start_time[time_modes.streaming] <= key_moments[0].timecode ? true : null);
+	$("#radio_recording, [for=radio_recording]").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 || start_time[time_modes.recording] <= key_moments[0].timecode ? true : null);
+	$("#radio_" + time_mode).prop("checked", true);
+
+	value = window.localStorage.getItem("order-of-service");
 	if (typeof value === 'string' && value.length > 0) {
 		order_of_service = JSON.parse(value);
 		if (order_of_service.length > 0) {
@@ -171,16 +206,9 @@ window.onload = function () {
 		$("#order-of-service").append(CreateServiceItem());
 	}
 
-	var value = window.localStorage.getItem("start-time");
-	if (typeof value === 'string' && value.length > 0) {
-		start_time = parseInt(value);
-	}
-
 	if (key_moments.length > 0) {
 		document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
 	}
-
-	//document.getElementById("text").innerHTML = window.obsstudio.pluginVersion;
 
 	function CreateServiceItem(item, index) {
 		$el = $("<li/>").append(
@@ -311,10 +339,10 @@ function EnableAddKeyMoment(countdown) {
 				var disabled = (data.recording === false && data.streaming === false);
 				el.disabled = disabled;
 				if (!disabled && key_moments.length > 0) {
-					var key_moment_duration = Math.trunc((start_time + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
+					var key_moment_duration = Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
 					if (key_moment_duration > 0 && key_moment_duration <= 10) {
 						el.disabled = true;
-						EnableAddKeyMoment(Math.trunc((start_time + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
+						EnableAddKeyMoment(Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
 					}
 				}
 			});
@@ -335,10 +363,10 @@ function AddKeyMoment() {
 		var el = document.getElementById("key-moments");
 		var timecode = 0;
 		if (key_moments.length > 0) {
-			timecode = Math.trunc(new Date().getTime() / 1000) - start_time;
+			timecode = Math.trunc(new Date().getTime() / 1000);
 		}
 		var service_item = order_of_service[key_moments.length];
-		el.value += (key_moments.length > 0 ? "\n" : "") + timecode.formatDuration() + " " + service_item;
+		el.value += (key_moments.length > 0 ? "\n" : "") + (timecode - start_time[time_mode]).formatDuration() + " " + service_item;
 		el.scrollTop = el.scrollHeight;
 		key_moments.push({ name: service_item, timecode: timecode });
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
@@ -346,9 +374,17 @@ function AddKeyMoment() {
 		EnableResetKeyMoments();
 
 		document.getElementById("add_key_moment").disabled = true;
-		EnableAddKeyMoment(Math.min(start_time - Math.trunc(new Date().getTime() / 1000), 10));
+		EnableAddKeyMoment(Math.min(key_moments[key_moments.length - 1].timecode - start_time[time_mode], 10));
 		EnableUndoKeyMoment();
 	}
+}
+
+function UpdateKeyMoments() {
+	var key_moments_text = "";
+	for (var i = 0; i < key_moments.length; i++) {
+		key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
+	}
+	$("#key-moments").val(key_moments_text);
 }
 
 function EnableUndoKeyMoment() {
@@ -371,11 +407,7 @@ function UndoKeyMoment() {
 
 		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
 
-		var key_moments_text = "";
-		for (var i = 0; i < key_moments.length; i++) {
-			key_moments_text += (i > 0 ? "\n" : "") + key_moments[i].timecode.formatDuration() + " " + key_moments[i].name;
-		}
-		$("#key-moments").val(key_moments_text);
+		UpdateKeyMoments();
 
 		SetCurrentScene();
 		EnableAddKeyMoment();
@@ -404,6 +436,14 @@ function EnableSetCurrentScene(sceneName) {
 	$("#set-current-scene").attr('disabled', disabled);
 }
 
+function SetTimeMode(timemode) {
+	$("#radio_" + timemode).prop("checked", true);
+	time_mode = timemode;
+	window.localStorage.setItem("time-mode", time_mode);
+
+	UpdateKeyMoments();
+}
+
 function Reset() {
 	obs.send("GetStreamingStatus").then((data) => {
 		var show_warning = key_moments.length > 0 && (data.recording === true || data.streaming === true);
@@ -417,6 +457,7 @@ function Reset() {
 			while (key_moments.length) {
 				key_moments.pop();
 			}
+
 			EnableAddKeyMoment();
 			EnableUndoKeyMoment();
 			EnableResetKeyMoments();
@@ -424,6 +465,14 @@ function Reset() {
 
 			if (show_warning) {
 				AddKeyMoment();
+			} else {
+				start_time[time_modes.streaming] = null;
+				window.localStorage.removeItem("start-time-streaming");
+				$("#radio_streaming, [for=radio_streaming]").attr("disabled", true);
+
+				start_time[time_modes.recording] = null;
+				window.localStorage.removeItem("start-time-recording");
+				$("#radio_recording, [for=radio_recording]").attr("disabled", true);
 			}
 		}
 
@@ -431,12 +480,13 @@ function Reset() {
 }
 
 function EnableResetKeyMoments() {
-	var el = document.getElementById("reset-key-moments");
+	var $key_moments = $("#key-moments");
+	var $reset = $("#reset-key-moments");
 	if (key_moments.length > 0) {
-		document.getElementById("key-moments").setAttribute("highlight", "highlight");
-		el.setAttribute("highlight", "highlight");
+		$key_moments.attr("highlight", "highlight");
+		$reset.attr("highlight", "highlight");
 	} else {
-		document.getElementById("key-moments").removeAttribute("highlight");
-		el.removeAttribute("highlight");
+		$key_moments.attr("highlight", null);
+		$reset.attr("highlight", null);
 	}
 }
