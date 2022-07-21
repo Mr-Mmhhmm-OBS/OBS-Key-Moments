@@ -11,7 +11,6 @@ body {
 h1 {
    text-align: center;
    font-size: 16px;
-   margin: 0;
 }
 
 #order-of-service {
@@ -75,6 +74,13 @@ h1 {
    color: #ffffff;
 }
 
+button#edit-auto-scenes {
+   float: right;
+   width: auto;
+   height: auto;
+   margin-top: 0.5em;
+}
+
 h1, p, li, button, label {
    user-select: none;
 }
@@ -89,8 +95,8 @@ h1, p, li, button, textarea, input[type=text], select, span, label {
       cursor: pointer;
    }
 
-   label[disabled]{
-    color: #777;
+   label[disabled] {
+      color: #777;
    }
 
 p, li, button, textarea {
@@ -152,11 +158,21 @@ button {
       min-height: fit-content;
    }
 
-   .menu button.close {
-      margin-top: auto;
-   }
+button#add-auto-scene {
+   float: left;
+   margin-left: 10px;
+   width: 2em;
+   height: 2em;
+}
+
+.menu button.close {
+   width: 8em;
+   height: 2em;
+   margin: auto;
+}
 
 .auto-scene input[type=text], .auto-scene select {
+   width: 100%;
    -ms-flex: 1;
    -webkit-flex: 1;
    flex: 1;

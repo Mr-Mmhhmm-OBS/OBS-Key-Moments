@@ -8,13 +8,10 @@
    <script type="text/javascript" src="autocomplete.js"></script>
 </head>
 <body>
+   <button id="edit-auto-scenes" onclick="EditAutoScenes(true);">Edit</button>
    <h1>Order of Service</h1>
    <ol id="order-of-service"></ol>
-   <!--<button onclick="EditService(true);">Edit Order of Service</button>-->
-   <button onclick="EditAutoScenes(true);">Edit Auto-Scenes</button>
    <h1>Key Moments</h1>
-   <input type="radio" id="radio_streaming" value="streaming" name="timing" /><label for="radio_streaming">Streaming</label>
-   <input type="radio" id="radio_recording" value="recording" name="timing" /><label for="radio_recording">Recording</label>
    <textarea id="key-moments" readonly="readonly" onclick="this.focus(); this.select();"></textarea>
    <div class="row">
       <button onclick="AddKeyMoment();" id="add_key_moment">Add Key-Moment</button>
@@ -24,11 +21,15 @@
       <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
       <button id="undo-key-moment" onclick="UndoKeyMoment();">Undo</button>
    </div>
+   <input type="radio" id="radio_streaming" value="streaming" name="timing" /><label for="radio_streaming">Streaming</label>
+   <br />
+   <input type="radio" id="radio_recording" value="recording" name="timing" /><label for="radio_recording">Recording</label>
    <div id="auto-scenes-editor" class="menu" style="display:none;">
       <div>
          <h1>Auto Scenes</h1>
          <div id="auto-scenes"></div>
-         <button onclick="AddAutoScene();">+</button>
+         <br />
+         <button id="add-auto-scene" onclick="AddAutoScene();">+</button>
          <button onclick="EditAutoScenes(false);" class="close">Close</button>
       </div>
    </div>
