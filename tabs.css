@@ -1,0 +1,43 @@
+tabgroup {
+   display: flex;
+}
+
+tab:first-child {
+   border-radius: 5px 0 0 0;
+}
+
+tab:last-child {
+   border-radius: 0 5px 0 0;
+   border-width: 1px;
+}
+
+tab {
+   display: block;
+   width: 100%;
+   border-style: solid;
+   border-color: black;
+   flex: 1 1 auto;
+   text-align: center;
+   border-width: 1px 0 1px 1px;
+   border-style: solid;
+   border-color:#222;
+   padding: 4px;
+   outline: none;
+   user-select: none;
+}
+
+   tab:not([disabled]):hover {
+      cursor: pointer;
+   }
+
+   tab:not([disabled]):not([selected]):hover {
+      background-color: #585858;
+   }
+
+tab[disabled]{
+   color: #777;
+}
+
+   tab[selected]:not([disabled]) {
+      background-color: #787878;
+   }

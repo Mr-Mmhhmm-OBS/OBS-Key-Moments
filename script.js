@@ -34,7 +34,7 @@ function Start(mode) {
 	if (typeof time_modes[mode] === "string") {
 		start_time[mode] = Math.trunc(new Date().getTime() / 1000);
 		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
-		$("#radio_" + mode + ", [for=radio_" + mode + "]").attr("disabled", null);
+		$("#tab_" + mode).attr("disabled", null);
 		if (time_mode != mode && start_time[time_mode] == null) {
 			SetTimeMode(mode);
 		}
@@ -79,7 +79,7 @@ obs.connect().then(() => {
 	});
 });
 
-window.onload = function () {
+$(window).on("load", function () {
 	$("#order-of-service").on('keydown', ".service-item", (e) => {
 		switch (e.key) {
 			case 'Enter':
@@ -149,8 +149,8 @@ window.onload = function () {
 		EnableAddKeyMoment();
 	});
 
-	$("input[type=radio][name=timing]").on("change", function (e) {
-		SetTimeMode(e.currentTarget.value);
+	$("tabgroup[tab-group=timing]").on("click", "tab[value]:not([disabled]):not([selected])", function (e) {
+		SetTimeMode(e.currentTarget.getAttribute("value"));
 	});
 
 	var value = window.localStorage.getItem("auto-scenes");
@@ -188,9 +188,9 @@ window.onload = function () {
 		UpdateKeyMoments();
 	}
 
-	$("#radio_streaming, [for=radio_streaming]").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 || start_time[time_modes.streaming] <= key_moments[0].timecode ? true : null);
-	$("#radio_recording, [for=radio_recording]").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 || start_time[time_modes.recording] <= key_moments[0].timecode ? true : null);
-	$("#radio_" + time_mode).prop("checked", true);
+	$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 || start_time[time_modes.streaming] <= key_moments[0].timecode ? "disabled" : null);
+	$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 || start_time[time_modes.recording] <= key_moments[0].timecode ? "disabled" : null);
+	$("#tab_" + time_mode).attr("selected", "selected");
 
 	value = window.localStorage.getItem("order-of-service");
 	if (typeof value === 'string' && value.length > 0) {
@@ -223,7 +223,7 @@ window.onload = function () {
 		autocomplete($el.find(".service-item"));
 		return $el;
 	}
-}
+});
 
 function EditAutoScenes(enable) {
 	document.getElementById("auto-scenes-editor").style.display = (enable ? "" : "none");
@@ -319,7 +319,7 @@ var countdown_timeout = null;
 function EnableAddKeyMoment(countdown) {
 	if (key_moments.length < order_of_service.length) {
 		if (typeof countdown === 'number' && countdown > 0) {
-			$("#add_key_moment").attr("count-down", countdown);
+			$("#add-key-moment").attr("count-down", countdown);
 			if (countdown_timeout != null) {
 				clearTimeout(countdown_timeout);
 			}
@@ -333,9 +333,9 @@ function EnableAddKeyMoment(countdown) {
 				clearTimeout(countdown_timeout);
 			}
 			countdown_timeout = null;
-			$("#add_key_moment").removeAttr('count-down');
+			$("#add-key-moment").removeAttr('count-down');
 			obs.send("GetStreamingStatus").then((data) => {
-				var el = document.getElementById("add_key_moment");
+				var el = document.getElementById("add-key-moment");
 				var disabled = (data.recording === false && data.streaming === false);
 				el.disabled = disabled;
 				if (!disabled && key_moments.length > 0) {
@@ -348,8 +348,8 @@ function EnableAddKeyMoment(countdown) {
 			});
 		}
 	} else {
-		$("#add_key_moment").attr("disabled", true);
-		$("#add_key_moment").removeAttr('count-down');
+		$("#add-key-moment").attr("disabled", true);
+		$("#add-key-moment").removeAttr('count-down');
 	}
 }
 
@@ -373,7 +373,7 @@ function AddKeyMoment() {
 		SetCurrentScene();
 		EnableResetKeyMoments();
 
-		document.getElementById("add_key_moment").disabled = true;
+		document.getElementById("add-key-moment").disabled = true;
 		EnableAddKeyMoment(Math.min(key_moments[key_moments.length - 1].timecode - start_time[time_mode], 10));
 		EnableUndoKeyMoment();
 	}
@@ -437,7 +437,8 @@ function EnableSetCurrentScene(sceneName) {
 }
 
 function SetTimeMode(timemode) {
-	$("#radio_" + timemode).prop("checked", true);
+	$("tabgroup[tab-group=timing] > tab").attr("selected", null);
+	$("#tab_" + timemode).attr("selected", "selected");
 	time_mode = timemode;
 	window.localStorage.setItem("time-mode", time_mode);
 
@@ -468,11 +469,11 @@ function Reset() {
 			} else {
 				start_time[time_modes.streaming] = null;
 				window.localStorage.removeItem("start-time-streaming");
-				$("#radio_streaming, [for=radio_streaming]").attr("disabled", true);
+				$("#tab_streaming").attr("disabled", true);
 
 				start_time[time_modes.recording] = null;
 				window.localStorage.removeItem("start-time-recording");
-				$("#radio_recording, [for=radio_recording]").attr("disabled", true);
+				$("#tab_recording").attr("disabled", true);
 			}
 		}
 
@@ -480,13 +481,10 @@ function Reset() {
 }
 
 function EnableResetKeyMoments() {
-	var $key_moments = $("#key-moments");
 	var $reset = $("#reset-key-moments");
 	if (key_moments.length > 0) {
-		$key_moments.attr("highlight", "highlight");
 		$reset.attr("highlight", "highlight");
 	} else {
-		$key_moments.attr("highlight", null);
 		$reset.attr("highlight", null);
 	}
 }

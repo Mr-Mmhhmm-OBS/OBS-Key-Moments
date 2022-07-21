@@ -2,28 +2,31 @@
 <html>
 <head>
    <link rel="stylesheet" href="style.css">
+   <link rel="stylesheet" href="tabs.css">
    <script type="text/javascript" src="jquery-3.6.0.js"></script>
    <script type='text/javascript' src='obs-websocket.js'></script>
    <script type="text/javascript" src="script.js"></script>
    <script type="text/javascript" src="autocomplete.js"></script>
+   <script type="text/javascript" src="tabs.js"></script>
 </head>
 <body>
    <button id="edit-auto-scenes" onclick="EditAutoScenes(true);">Edit</button>
    <h1>Order of Service</h1>
    <ol id="order-of-service"></ol>
    <h1>Key Moments</h1>
+   <tabgroup tab-group="timing">
+      <tab id="tab_streaming" value="streaming">Streaming</tab>
+      <tab id="tab_recording" value="recording">Recording</tab>
+   </tabgroup>
    <textarea id="key-moments" readonly="readonly" onclick="this.focus(); this.select();"></textarea>
    <div class="row">
-      <button onclick="AddKeyMoment();" id="add_key_moment">Add Key-Moment</button>
-      <button onclick="SetCurrentScene();" id="set-current-scene">Set Current Scene</button>
+      <button onclick="AddKeyMoment();" id="add-key-moment" disabled>Add Key-Moment</button>
+      <button onclick="SetCurrentScene();" id="set-current-scene" disabled>Set Current Scene</button>
    </div>
    <div class="row">
       <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
-      <button id="undo-key-moment" onclick="UndoKeyMoment();">Undo</button>
+      <button id="undo-key-moment" onclick="UndoKeyMoment();" disabled>Undo</button>
    </div>
-   <input type="radio" id="radio_streaming" value="streaming" name="timing" /><label for="radio_streaming">Streaming</label>
-   <br />
-   <input type="radio" id="radio_recording" value="recording" name="timing" /><label for="radio_recording">Recording</label>
    <div id="auto-scenes-editor" class="menu" style="display:none;">
       <div>
          <h1>Auto Scenes</h1>
