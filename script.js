@@ -18,8 +18,8 @@ function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
 
-const time_modes = { streaming: "streaming", recording: "recording" };
-var time_mode = time_modes.streaming;
+const time_modes = { streaming: "streaming", clock: "clock", recording: "recording" };
+var time_mode = time_modes.clock;
 var start_time = {};
 start_time[time_modes.streaming] = null;
 start_time[time_modes.recording] = null;
@@ -35,8 +35,9 @@ function Start(mode) {
 		start_time[mode] = Math.trunc(new Date().getTime() / 1000);
 		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
 		$("#tab_" + mode).attr("disabled", null);
+		$("#tab_clock").attr("disabled", null);
 		if (time_mode != mode && start_time[time_mode] == null) {
-			SetTimeMode(mode);
+			SetTimeMode(time_modes.clock);
 		}
 
 		if (key_moments.length === 0) {
@@ -179,7 +180,7 @@ $(window).on("load", function () {
 	if (typeof value === 'string' && value.length > 0) {
 		time_mode = value;
 	} else {
-		time_mode = time_modes.streaming;
+		time_mode = time_modes.clock;
 	}
 
 	value = window.localStorage.getItem("key-moments");
@@ -188,8 +189,9 @@ $(window).on("load", function () {
 		UpdateKeyMoments();
 	}
 
-	$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 || start_time[time_modes.streaming] <= key_moments[0].timecode ? "disabled" : null);
-	$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 || start_time[time_modes.recording] <= key_moments[0].timecode ? "disabled" : null);
+	$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 ? "disabled" : null);
+	$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 ? "disabled" : null);
+	$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) || key_moments.length == 0 ? "disabled" : null);
 	$("#tab_" + time_mode).attr("selected", "selected");
 
 	value = window.localStorage.getItem("order-of-service");
@@ -360,21 +362,16 @@ function AddKeyMoment() {
 		}
 		$("#order-of-service li:nth-child(" + (key_moments.length + 1) + ")").attr("selected", "selected");
 
-		var el = document.getElementById("key-moments");
-		var timecode = 0;
-		if (key_moments.length > 0) {
-			timecode = Math.trunc(new Date().getTime() / 1000);
-		}
+		var timecode = Math.trunc(new Date().getTime() / 1000);
 		var service_item = order_of_service[key_moments.length];
-		el.value += (key_moments.length > 0 ? "\n" : "") + (timecode - start_time[time_mode]).formatDuration() + " " + service_item;
-		el.scrollTop = el.scrollHeight;
 		key_moments.push({ name: service_item, timecode: timecode });
+		UpdateKeyMoments();
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 		SetCurrentScene();
 		EnableResetKeyMoments();
 
 		document.getElementById("add-key-moment").disabled = true;
-		EnableAddKeyMoment(Math.min(key_moments[key_moments.length - 1].timecode - start_time[time_mode], 10));
+		EnableAddKeyMoment(Math.min(key_moments.length === 1 ? 10 : timecode - key_moments[key_moments.length - 2].timecode, 10));
 		EnableUndoKeyMoment();
 	}
 }
@@ -382,7 +379,11 @@ function AddKeyMoment() {
 function UpdateKeyMoments() {
 	var key_moments_text = "";
 	for (var i = 0; i < key_moments.length; i++) {
-		key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
+		if (time_mode === time_modes.clock) {
+			key_moments_text += (i > 0 ? "\n" : "") + new Date(key_moments[i].timecode).toTimeString().split(' ')[0] + " " + key_moments[i].name;
+		} else {
+			key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
+		}
 	}
 	$("#key-moments").val(key_moments_text);
 }
@@ -402,7 +403,7 @@ function UndoKeyMoment() {
 	if (key_moments.length > 0 && confirm("Are you sure you want to undo the last key-moment?")) {
 		$("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
 
-		key_moments.splice(key_moments.length - 1, 1);
+		key_moments.pop();
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 
 		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
@@ -452,21 +453,23 @@ function Reset() {
 			if (key_moments.length > 0) {
 				document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
 			}
-			window.localStorage.removeItem("key-moments");
-			document.getElementById("key-moments").value = "";
 
-			while (key_moments.length) {
+			var min = show_warning ? 1 : 0;
+			while (key_moments.length > min) {
 				key_moments.pop();
 			}
+
+			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+			UpdateKeyMoments();
 
 			EnableAddKeyMoment();
 			EnableUndoKeyMoment();
 			EnableResetKeyMoments();
 			SetCurrentScene();
 
-			if (show_warning) {
-				AddKeyMoment();
-			} else {
+			if (!show_warning) {
+				$("#tab_clock").attr("disabled", true);
+
 				start_time[time_modes.streaming] = null;
 				window.localStorage.removeItem("start-time-streaming");
 				$("#tab_streaming").attr("disabled", true);
