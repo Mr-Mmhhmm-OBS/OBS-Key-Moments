@@ -433,7 +433,7 @@ function SetCurrentScene() {
 
 function EnableSetCurrentScene(sceneName) {
 	var disabled = true;
-	if (key_moments.length <= order_of_service.length) {
+	if (key_moments.length <= order_of_service.length && order_of_service.length > 0) {
 		var service_item = order_of_service[Math.max(0, key_moments.length - 1)].split(" - ")[0];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
 			disabled = auto_scenes[service_item] === sceneName;
