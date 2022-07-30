@@ -88,12 +88,12 @@ $(window).on("load", function () {
 					var index = IndexOfElement(e.currentTarget.parentElement);
 					if (e.currentTarget.innerText.length > 1 && document.getSelection().getRangeAt(0).endOffset > 1) {
 						order_of_service.splice(index + 1, 0, "");
-						var $el = CreateServiceItem("", index + 1);
+						var $el = CreateServiceItem("");
 						$(e.currentTarget.parentElement).after($el);
 						$el.find(".service-item").focus();
 					} else {
 						order_of_service.splice(index, 0, "");
-						var $el = CreateServiceItem("", index);
+						var $el = CreateServiceItem("");
 						$(e.currentTarget.parentElement).before($el);
 						$el.find(".service-item").focus();
 					}
@@ -202,7 +202,7 @@ $(window).on("load", function () {
 		order_of_service = JSON.parse(value);
 		if (order_of_service.length > 0) {
 			for (var index = 0; index < order_of_service.length; index++) {
-				$("#order-of-service").append(CreateServiceItem(order_of_service[index], index));
+				$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
 			}
 		} else {
 			$("#order-of-service").append(CreateServiceItem());
@@ -215,13 +215,13 @@ $(window).on("load", function () {
 		document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
 	}
 
-	function CreateServiceItem(item, index) {
+	function CreateServiceItem(item) {
 		$el = $("<li/>").append(
 			$("<span/>", {
 				class: "service-item",
 				spellcheck: true,
 				contentEditable: true,
-				"auto-scene": auto_scenes[item.split(" - ")[0]],
+				"auto-scene": typeof item === 'string' ? auto_scenes[item.split(" - ")[0]] : "",
 				text: item
 			})
 		);
