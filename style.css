@@ -213,3 +213,16 @@ button#add-auto-scene {
 #add-key-moment[count-down]:after {
    content: " (" attr(count-down) ")";
 }
+
+version{
+   color: white;
+   font-weight: 100;
+   font-style: italic;
+   font-size: 0.75em;
+   float: right;
+   margin: 10px;
+}
+
+version:before{
+   content: "v";
+}
