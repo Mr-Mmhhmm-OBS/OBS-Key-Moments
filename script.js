@@ -19,7 +19,7 @@ function IndexOfElement(element) {
 }
 
 const time_modes = { streaming: "streaming", clock: "clock", recording: "recording" };
-var time_mode = time_modes.clock;
+var time_mode = null;
 var start_time = {};
 start_time[time_modes.streaming] = null;
 start_time[time_modes.recording] = null;
@@ -31,7 +31,7 @@ var scene_names = [];
 const obs = new OBSWebSocket();
 
 function Start(mode) {
-	if (typeof time_modes[mode] === "string") {
+	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
 		start_time[mode] = Math.trunc(new Date().getTime() / 1000);
 		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
 		$("#tab_" + mode).attr("disabled", null);
@@ -180,7 +180,7 @@ $(window).on("load", function () {
 	if (typeof value === 'string' && value.length > 0) {
 		time_mode = value;
 	} else {
-		time_mode = time_modes.clock;
+		time_mode = null;
 	}
 
 	value = window.localStorage.getItem("key-moments");
@@ -192,7 +192,10 @@ $(window).on("load", function () {
 	$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 ? "disabled" : null);
 	$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 ? "disabled" : null);
 	$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) || key_moments.length == 0 ? "disabled" : null);
-	$("#tab_" + time_mode).attr("selected", "selected");
+
+	if (time_mode != null) {
+		$("#tab_" + time_mode).attr("selected", "selected");
+	}
 
 	value = window.localStorage.getItem("order-of-service");
 	if (typeof value === 'string' && value.length > 0) {
@@ -378,11 +381,13 @@ function AddKeyMoment() {
 
 function UpdateKeyMoments() {
 	var key_moments_text = "";
-	for (var i = 0; i < key_moments.length; i++) {
-		if (time_mode === time_modes.clock) {
-			key_moments_text += (i > 0 ? "\n" : "") + new Date(key_moments[i].timecode).toTimeString().split(' ')[0] + " " + key_moments[i].name;
-		} else {
-			key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
+	if (time_mode != null) {
+		for (var i = 0; i < key_moments.length; i++) {
+			if (time_mode === time_modes.clock) {
+				key_moments_text += (i > 0 ? "\n" : "") + new Date(key_moments[i].timecode * 1000).toTimeString().split(' ')[0] + " " + key_moments[i].name;
+			} else {
+				key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
+			}
 		}
 	}
 	$("#key-moments").val(key_moments_text);
@@ -477,6 +482,9 @@ function Reset() {
 				start_time[time_modes.recording] = null;
 				window.localStorage.removeItem("start-time-recording");
 				$("#tab_recording").attr("disabled", true);
+
+				time_mode = null;
+				window.localStorage.removeItem("time-mode");
 			}
 		}
 
