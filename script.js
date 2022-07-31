@@ -17,7 +17,7 @@ String.prototype.toSeconds = function () {
 function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
-
+var active = false;
 const time_modes = { streaming: "streaming", clock: "clock", recording: "recording" };
 var time_mode = null;
 var start_time = {};
@@ -29,9 +29,12 @@ var auto_scenes = {};
 var scene_names = [];
 
 const obs = new OBSWebSocket();
+var obs_websocket_url = "";
+var obs_websocket_password = "";
 
 function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
+		active = true;
 		start_time[mode] = Math.trunc(new Date().getTime() / 1000);
 		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
 		$("#tab_" + mode).attr("disabled", null);
@@ -51,34 +54,11 @@ function Start(mode) {
 }
 
 function Stop() {
+	active = false;
 	EnableAddKeyMoment();
 	EnableUndoKeyMoment();
 	EnableResetKeyMoments();
 }
-
-obs.on('StreamStarted', data => {
-	Start(time_modes.streaming);
-});
-obs.on('StreamStopped', data => {
-	Stop();
-});
-obs.on('RecordingStarted', data => {
-	Start(time_modes.recording);
-});
-obs.on('RecordingStopped', data => {
-	Stop();
-});
-obs.on("SwitchScenes", data => {
-	EnableSetCurrentScene(data.sceneName);
-});
-obs.connect().then(() => {
-	EnableAddKeyMoment();
-	EnableUndoKeyMoment();
-	EnableResetKeyMoments();
-	obs.send("GetCurrentScene").then(data => {
-		EnableSetCurrentScene(data.name);
-	});
-});
 
 $(window).on("load", function () {
 	$("#order-of-service").on('keydown', ".service-item", (e) => {
@@ -154,6 +134,26 @@ $(window).on("load", function () {
 		SetTimeMode(e.currentTarget.getAttribute("value"));
 	});
 
+	$("#obs-websocket-url").on("blur", function (e) {
+		obs_websocket_url = e.currentTarget.value;
+		window.localStorage.setItem("obs-websocket-url", obs_websocket_url);
+	});
+
+	$("#obs-websocket-password").on("blur", function (e) {
+		obs_websocket_password = e.currentTarget.value;
+		window.localStorage.setItem("obs-websocket-password", obs_websocket_password);
+	});
+
+	$("#obs-websocket-connect").on("click", function (e) {
+		try {
+			obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then(() => {
+				EditAutoScenes(true);
+			});
+		} catch (error) {
+			console.eror("Failed to Connect", error.code, error.message);
+		}
+	});
+
 	var value = window.localStorage.getItem("auto-scenes");
 	if (typeof value === 'string' && value.length > 0) {
 		auto_scenes = JSON.parse(value);
@@ -215,6 +215,47 @@ $(window).on("load", function () {
 		document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
 	}
 
+	value = window.localStorage.getItem("obs-websocket-url");
+	if (typeof value === 'string' && value.length > 0) {
+		obs_websocket_url = value;
+		$("#obs-websocket-url").val(value);
+	}
+
+	value = window.localStorage.getItem("obs-websocket-password");
+	if (typeof value === 'string' && value.length > 0) {
+		obs_websocket_password = value;
+		$("#obs-websocket-password").val(value);
+	}
+
+
+	obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then(() => {
+		EnableAddKeyMoment();
+		EnableUndoKeyMoment();
+		EnableResetKeyMoments();
+		obs.call("GetCurrentProgramScene").then(data => {
+			EnableSetCurrentScene(data.currentProgramSceneName);
+		});
+	});
+
+	obs.on('StreamStateChanged', data => {
+		if (data.outputActive) {
+			Start(time_modes.streaming);
+		} else {
+			Stop();
+		}
+	});
+	obs.on('RecordStateChanged', data => {
+		console.log(data);
+		if (data.outputActive) {
+			Start(time_modes.recording);
+		} else {
+			Stop();
+		}
+	});
+	obs.on("CurrentProgramSceneChanged", data => {
+		EnableSetCurrentScene(data.sceneName);
+	});
+
 	function CreateServiceItem(item) {
 		$el = $("<li/>").append(
 			$("<span/>", {
@@ -240,12 +281,13 @@ function EditAutoScenes(enable) {
 				options_el.firstChild.remove();
 			}
 		}
-		obs.send('GetSceneList').then((data) => {
+
+		obs.call('GetSceneList').then((data) => {
 			while (scene_names.length) {
 				scene_names.pop();
 			}
 			for (var scene of data.scenes) {
-				scene_names.push(scene.name);
+				scene_names.push(scene.sceneName);
 			}
 			var rows = document.getElementById("auto-scenes").children;
 			for (var tr_idx = 0; tr_idx < rows.length; tr_idx++) {
@@ -322,7 +364,7 @@ function SelectOption(selectElement, optionValToSelect) {
 
 var countdown_timeout = null;
 function EnableAddKeyMoment(countdown) {
-	if (key_moments.length < order_of_service.length) {
+	if (key_moments.length < order_of_service.length && active) {
 		if (typeof countdown === 'number' && countdown > 0) {
 			$("#add-key-moment").attr("count-down", countdown);
 			if (countdown_timeout != null) {
@@ -339,17 +381,20 @@ function EnableAddKeyMoment(countdown) {
 			}
 			countdown_timeout = null;
 			$("#add-key-moment").removeAttr('count-down');
-			obs.send("GetStreamingStatus").then((data) => {
-				var el = document.getElementById("add-key-moment");
-				var disabled = (data.recording === false && data.streaming === false);
-				el.disabled = disabled;
-				if (!disabled && key_moments.length > 0) {
-					var key_moment_duration = Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
-					if (key_moment_duration > 0 && key_moment_duration <= 10) {
-						el.disabled = true;
-						EnableAddKeyMoment(Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
+
+			obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then(() => {
+				obs.call("GetStreamStatus").then((data) => {
+					var el = document.getElementById("add-key-moment");
+					var disabled = (data.recording === false && data.streaming === false);
+					el.disabled = disabled;
+					if (!disabled && key_moments.length > 0) {
+						var key_moment_duration = Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
+						if (key_moment_duration > 0 && key_moment_duration <= 10) {
+							el.disabled = true;
+							EnableAddKeyMoment(Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
+						}
 					}
-				}
+				});
 			});
 		}
 	} else {
@@ -395,9 +440,11 @@ function UpdateKeyMoments() {
 
 function EnableUndoKeyMoment() {
 	if (key_moments.length > 1) {
-		obs.send("GetStreamingStatus").then((data) => {
-			var disabled = (data.recording === false && data.streaming === false);
-			$("#undo-key-moment").prop("disabled", disabled);
+		obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then(() => {
+			obs.call("GetStreamStatus").then((data) => {
+				var disabled = (data.recording === false && data.streaming === false);
+				$("#undo-key-moment").prop("disabled", disabled);
+			});
 		});
 	} else {
 		$("#undo-key-moment").prop("disabled", true);
@@ -426,7 +473,9 @@ function SetCurrentScene() {
 	if (key_moments.length <= order_of_service.length) {
 		var service_item = order_of_service[Math.max(0, key_moments.length - 1)].split(" - ")[0];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
-			obs.send('SetCurrentScene', { 'scene-name': auto_scenes[service_item] });
+			obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then(() => {
+				obs.call('SetCurrentProgramScene', { 'sceneName': auto_scenes[service_item] });
+			});
 		}
 	}
 }
@@ -452,42 +501,43 @@ function SetTimeMode(timemode) {
 }
 
 function Reset() {
-	obs.send("GetStreamingStatus").then((data) => {
-		var show_warning = key_moments.length > 0 && (data.recording === true || data.streaming === true);
-		if (!show_warning || confirm("Are you sure you want to reset key-moments during a broadcast?")) {
-			if (key_moments.length > 0) {
-				document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
+	obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then(() => {
+		obs.call("GetStreamStatus").then((data) => {
+			var show_warning = key_moments.length > 0 && (data.recording === true || data.streaming === true);
+			if (!show_warning || confirm("Are you sure you want to reset key-moments during a broadcast?")) {
+				if (key_moments.length > 0) {
+					document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
+				}
+
+				var min = show_warning ? 1 : 0;
+				while (key_moments.length > min) {
+					key_moments.pop();
+				}
+
+				window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+				UpdateKeyMoments();
+
+				EnableAddKeyMoment();
+				EnableUndoKeyMoment();
+				EnableResetKeyMoments();
+				SetCurrentScene();
+
+				if (!show_warning) {
+					$("#tab_clock").attr("disabled", true);
+
+					start_time[time_modes.streaming] = null;
+					window.localStorage.removeItem("start-time-streaming");
+					$("#tab_streaming").attr("disabled", true);
+
+					start_time[time_modes.recording] = null;
+					window.localStorage.removeItem("start-time-recording");
+					$("#tab_recording").attr("disabled", true);
+
+					time_mode = null;
+					window.localStorage.removeItem("time-mode");
+				}
 			}
-
-			var min = show_warning ? 1 : 0;
-			while (key_moments.length > min) {
-				key_moments.pop();
-			}
-
-			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-			UpdateKeyMoments();
-
-			EnableAddKeyMoment();
-			EnableUndoKeyMoment();
-			EnableResetKeyMoments();
-			SetCurrentScene();
-
-			if (!show_warning) {
-				$("#tab_clock").attr("disabled", true);
-
-				start_time[time_modes.streaming] = null;
-				window.localStorage.removeItem("start-time-streaming");
-				$("#tab_streaming").attr("disabled", true);
-
-				start_time[time_modes.recording] = null;
-				window.localStorage.removeItem("start-time-recording");
-				$("#tab_recording").attr("disabled", true);
-
-				time_mode = null;
-				window.localStorage.removeItem("time-mode");
-			}
-		}
-
+		});
 	});
 }
 

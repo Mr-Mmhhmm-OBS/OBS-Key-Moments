@@ -28,9 +28,12 @@
       <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
       <button id="undo-key-moment" onclick="UndoKeyMoment();" disabled>Undo</button>
    </div>
-   <version>1.1</version>
+   <version>1.2</version>
    <div id="auto-scenes-editor" class="menu" style="display:none;">
       <div>
+         <label>IP Address: </label><input id="obs-websocket-url" type="url" placeholder="localhost:port" />
+         <label>Password: </label><input id="obs-websocket-password" type="password" />
+         <button id="obs-websocket-connect">Connect</button>
          <h1>Auto Scenes</h1>
          <div id="auto-scenes"></div>
          <br />
