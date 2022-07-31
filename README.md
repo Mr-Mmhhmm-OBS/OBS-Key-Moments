@@ -18,3 +18,5 @@ NOTE: OBS automatically loads the most recent version upon opening the program. 
 3) Follow "Installation Option A" instructions, but use your local file location
 
 NOTE: you will need to check for and download updates manually
+
+Current version requires websocket v4.x. Update coming *soon* to support websocket v5
