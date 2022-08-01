@@ -1,4 +1,4 @@
-@media screen and (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-device-width: 1400px){
+@media screen and (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-device-width: 1400px) and (orientation: portrait){
    html body{
       font-size: 36px;
    }
