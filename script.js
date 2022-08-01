@@ -277,12 +277,12 @@ $(window).on("load", function () {
 	});
 	obs.on("ConnectionOpened", () => {
 		connected = true;
-		$("body").attr("obs-websocket-state", "connected");
+		$("html").attr("obs-websocket-state", "connected");
 		console.log("OBS WebSocket Connected");
 	});
 	obs.on("ConnectionClosed", (error) => {
 		connected = false;
-		$("body").attr("obs-websocket-state", "disconnected");
+		$("html").attr("obs-websocket-state", "disconnected");
 		console.error(error);
 	});
 

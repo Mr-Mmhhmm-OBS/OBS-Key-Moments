@@ -1,25 +1,35 @@
 @media (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-width: 480px){
-   html body{
+   html{
       font-size: 36px;
    }
 }
 
-body {
+html {
    background-color: #242424;
-   padding: 0.25em 0.5em;
-   margin: 0;
-   position: absolute;
    font-size: 12px;
-   top: 0;
-   bottom: 0;
-   left: 0;
-   right: 0;
-   border: 1px solid #242424;
 }
 
-   body:not([obs-websocket-state=connected]) {
-      border: 1px solid red;
-   }
+html, body {
+   margin: 0;
+}
+
+window-border {
+   position: fixed;
+   pointer-events: none;   
+   top: 0;
+   right: 0;
+   bottom: 0;
+   left: 0;
+}
+
+[obs-websocket-state=disconnected] window-border {
+   border: 1px solid red;
+}
+
+main {
+   padding: 0.25em 0.5em;
+}
+
 
 h1 {
    text-align: center;
@@ -243,7 +253,7 @@ version{
       border: 1px solid transparent;
    }
 
-body:not([obs-websocket-state=connected]) .obs-websocket-connection:after {
+[obs-websocket-state=disconnected] .obs-websocket-connection:after {
    animation-name: pulse-red;
    animation-duration: 1.0s;
    animation-iteration-count: infinite;
