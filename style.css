@@ -1,4 +1,4 @@
-@media (min-resolution: 240dpi) and (max-resolution: 900dpi) and (min-width: 480px){
+@media screen and (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-width: 1400px){
    html{
       font-size: 36px;
    }
