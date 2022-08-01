@@ -175,6 +175,12 @@ $(window).on("load", function () {
 		}
 	});
 
+	$(".obs-websocket-connection").on("click", function (e) {
+		if (!connected) {
+			Connect();
+		}
+	});
+
 	var value = window.localStorage.getItem("auto-scenes");
 	if (typeof value === 'string' && value.length > 0) {
 		auto_scenes = JSON.parse(value);
