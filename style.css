@@ -6,11 +6,14 @@
 
 html {
    background-color: #242424;
-   font-size: 12px;
 }
 
 html, body {
    margin: 0;
+}
+
+body {
+   font-size: 12px;
 }
 
 window-border {
