@@ -18,6 +18,9 @@ function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
 
+var connected = false;
+var streaming = false;
+var recording = false;
 const time_modes = { streaming: "streaming", clock: "clock", recording: "recording" };
 var time_mode = null;
 var start_time = {};
@@ -27,8 +30,9 @@ var order_of_service = [];
 var key_moments = [];
 var auto_scenes = {};
 var scene_names = [];
-
 const obs = new OBSWebSocket();
+var obs_websocket_url = "";
+var obs_websocket_password = "";
 
 function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
@@ -56,29 +60,32 @@ function Stop() {
 	EnableResetKeyMoments();
 }
 
-obs.on('StreamStarted', data => {
-	Start(time_modes.streaming);
-});
-obs.on('StreamStopped', data => {
-	Stop();
-});
-obs.on('RecordingStarted', data => {
-	Start(time_modes.recording);
-});
-obs.on('RecordingStopped', data => {
-	Stop();
-});
-obs.on("SwitchScenes", data => {
-	EnableSetCurrentScene(data.sceneName);
-});
-obs.connect().then(() => {
-	EnableAddKeyMoment();
-	EnableUndoKeyMoment();
-	EnableResetKeyMoments();
-	obs.send("GetCurrentScene").then(data => {
-		EnableSetCurrentScene(data.name);
+function Connect() {
+	obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
+		obs.call("GetStreamStatus").then((data) => {
+			streaming = data.outputActive;
+			obs.call("GetRecordStatus").then((data) => {
+				recording = data.outputActive;
+				EnableAddKeyMoment();
+				EnableUndoKeyMoment();
+			});
+		});
+
+		PopulateAutoScenes();
+		EnableResetKeyMoments();
+
+		obs.call("GetCurrentProgramScene").then(data => {
+			EnableSetCurrentScene(data.currentProgramSceneName);
+		});
+	}, (error) => {
+		console.error("Failed to Connect", error.code, error.message);
+		//alert("Error\n" + error.code + "\n" + error.message);
 	});
-});
+}
+
+function Disconnect() {
+	obs.disconnect();
+}
 
 $(window).on("load", function () {
 	$("#order-of-service").on('keydown', ".service-item", (e) => {
@@ -131,12 +138,8 @@ $(window).on("load", function () {
 			// Remove empty service item
 			e.currentTarget.parentElement.remove();
 			order_of_service.splice(index, 1);
-			for (var i = index; i < key_moments.length; i++) {
-				key_moments[i].name = order_of_service[i];
-			}
 		} else {
 			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
-			key_moments[index].name = value;
 		}
 
 		if (index < key_moments.length) {
@@ -152,6 +155,24 @@ $(window).on("load", function () {
 
 	$("tabgroup[tab-group=timing]").on("click", "tab[value]:not([disabled]):not([selected])", function (e) {
 		SetTimeMode(e.currentTarget.getAttribute("value"));
+	});
+
+	$("#obs-websocket-url").on("blur", function (e) {
+		obs_websocket_url = e.currentTarget.value;
+		window.localStorage.setItem("obs-websocket-url", obs_websocket_url);
+	});
+
+	$("#obs-websocket-password").on("blur", function (e) {
+		obs_websocket_password = e.currentTarget.value;
+		window.localStorage.setItem("obs-websocket-password", obs_websocket_password);
+	});
+
+	$("#obs-websocket-connect").on("click", function (e) {
+		if (connected) {
+			Disconnect();
+		} else {
+			Connect();
+		}
 	});
 
 	var value = window.localStorage.getItem("auto-scenes");
@@ -215,6 +236,51 @@ $(window).on("load", function () {
 		document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
 	}
 
+	value = window.localStorage.getItem("obs-websocket-url");
+	if (typeof value === 'string' && value.length > 0) {
+		obs_websocket_url = value;
+		$("#obs-websocket-url").val(value);
+	}
+
+	value = window.localStorage.getItem("obs-websocket-password");
+	if (typeof value === 'string' && value.length > 0) {
+		obs_websocket_password = value;
+		$("#obs-websocket-password").val(value);
+	}
+
+	Connect();
+
+	obs.on('StreamStateChanged', data => {
+		streaming = data.outputActive;
+		if (streaming) {
+			Start(time_modes.streaming);
+		} else {
+			Stop();
+		}
+	});
+	obs.on('RecordStateChanged', data => {
+		recording = data.outputActive;
+		if (recording) {
+			Start(time_modes.recording);
+		} else {
+			Stop();
+		}
+	});
+	obs.on("CurrentProgramSceneChanged", data => {
+		EnableSetCurrentScene(data.sceneName);
+	});
+	obs.on("ConnectionOpened", () => {
+		connected = true;
+		$("body").attr("obs-websocket-state", "connected");
+		console.log("OBS WebSocket Connected");
+	});
+	obs.on("ConnectionClosed", (error) => {
+		connected = false;
+		$("body").attr("obs-websocket-state", "disconnected");
+		console.error(error);
+	});
+
+
 	function CreateServiceItem(item) {
 		$el = $("<li/>").append(
 			$("<span/>", {
@@ -233,31 +299,7 @@ $(window).on("load", function () {
 function EditAutoScenes(enable) {
 	document.getElementById("auto-scenes-editor").style.display = (enable ? "" : "none");
 	if (enable) {
-		var auto_scenes_el = document.getElementById("auto-scenes");
-		for (var tr of auto_scenes_el.children) {
-			var options_el = tr.children[2];
-			while (options_el.firstChild) {
-				options_el.firstChild.remove();
-			}
-		}
-		obs.send('GetSceneList').then((data) => {
-			while (scene_names.length) {
-				scene_names.pop();
-			}
-			for (var scene of data.scenes) {
-				scene_names.push(scene.name);
-			}
-			var rows = document.getElementById("auto-scenes").children;
-			for (var tr_idx = 0; tr_idx < rows.length; tr_idx++) {
-				var select = rows[tr_idx].children[2];
-				PopulateOptions(select, scene_names);
 
-				var service_item = rows[tr_idx].children[1].value;
-				if (service_item.length > 0 && typeof auto_scenes[service_item] === 'string') {
-					SelectOption(select, auto_scenes[service_item]);
-				}
-			}
-		});
 	} else {
 		auto_scenes = {};
 		for (var item of document.getElementById("auto-scenes").children) {
@@ -294,6 +336,35 @@ function AddAutoScene(service_item) {
 	PopulateOptions($auto_scene.find("select")[0], scene_names);
 }
 
+function PopulateAutoScenes() {
+	var auto_scenes_el = document.getElementById("auto-scenes");
+	for (var tr of auto_scenes_el.children) {
+		var options_el = tr.children[2];
+		while (options_el.firstChild) {
+			options_el.firstChild.remove();
+		}
+	}
+
+	obs.call('GetSceneList').then((data) => {
+		while (scene_names.length) {
+			scene_names.pop();
+		}
+		for (var scene of data.scenes) {
+			scene_names.push(scene.sceneName);
+		}
+		var rows = document.getElementById("auto-scenes").children;
+		for (var tr_idx = 0; tr_idx < rows.length; tr_idx++) {
+			var select = rows[tr_idx].children[2];
+			PopulateOptions(select, scene_names);
+
+			var service_item = rows[tr_idx].children[1].value;
+			if (service_item.length > 0 && typeof auto_scenes[service_item] === 'string') {
+				SelectOption(select, auto_scenes[service_item]);
+			}
+		}
+	}, (error) => { console.error(error); });
+}
+
 function PopulateOptions(select, options, canDisable) {
 	if (canDisable !== false) {
 		var el = document.createElement("option");
@@ -322,7 +393,7 @@ function SelectOption(selectElement, optionValToSelect) {
 
 var countdown_timeout = null;
 function EnableAddKeyMoment(countdown) {
-	if (key_moments.length < order_of_service.length) {
+	if (key_moments.length < order_of_service.length && (streaming || recording)) {
 		if (typeof countdown === 'number' && countdown > 0) {
 			$("#add-key-moment").attr("count-down", countdown);
 			if (countdown_timeout != null) {
@@ -332,27 +403,28 @@ function EnableAddKeyMoment(countdown) {
 				countdown--;
 				EnableAddKeyMoment(countdown);
 			}, (1000));
-		}
-		else {
+		} else {
 			if (countdown_timeout != null) {
 				clearTimeout(countdown_timeout);
+				countdown_timeout = null;
 			}
-			countdown_timeout = null;
 			$("#add-key-moment").removeAttr('count-down');
-			obs.send("GetStreamingStatus").then((data) => {
-				var el = document.getElementById("add-key-moment");
-				var disabled = (data.recording === false && data.streaming === false);
-				el.disabled = disabled;
-				if (!disabled && key_moments.length > 0) {
-					var key_moment_duration = Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
-					if (key_moment_duration > 0 && key_moment_duration <= 10) {
-						el.disabled = true;
-						EnableAddKeyMoment(Math.trunc((start_time[time_mode] + key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
-					}
+
+			var el = document.getElementById("add-key-moment");
+			el.disabled = false;
+			if (key_moments.length > 0) {
+				var key_moment_duration = Math.trunc((key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
+				if (key_moment_duration > 0 && key_moment_duration <= 10) {
+					el.disabled = true;
+					EnableAddKeyMoment(Math.trunc((key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
 				}
-			});
+			}
 		}
 	} else {
+		if (countdown_timeout != null) {
+			clearTimeout(countdown_timeout);
+			countdown_timeout = null;
+		}
 		$("#add-key-moment").attr("disabled", true);
 		$("#add-key-moment").removeAttr('count-down');
 	}
@@ -394,14 +466,7 @@ function UpdateKeyMoments() {
 }
 
 function EnableUndoKeyMoment() {
-	if (key_moments.length > 1) {
-		obs.send("GetStreamingStatus").then((data) => {
-			var disabled = (data.recording === false && data.streaming === false);
-			$("#undo-key-moment").prop("disabled", disabled);
-		});
-	} else {
-		$("#undo-key-moment").prop("disabled", true);
-	}
+	$("#undo-key-moment").prop("disabled", key_moments.length <= 1 || !(streaming || recording));
 }
 
 function UndoKeyMoment() {
@@ -426,14 +491,16 @@ function SetCurrentScene() {
 	if (key_moments.length <= order_of_service.length) {
 		var service_item = order_of_service[Math.max(0, key_moments.length - 1)].split(" - ")[0];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
-			obs.send('SetCurrentScene', { 'scene-name': auto_scenes[service_item] });
+			obs.call('SetCurrentProgramScene', {
+				'sceneName': auto_scenes[service_item]
+			}, (error) => { console.error(error); });
 		}
 	}
 }
 
 function EnableSetCurrentScene(sceneName) {
 	var disabled = true;
-	if (key_moments.length <= order_of_service.length) {
+	if (key_moments.length <= order_of_service.length && order_of_service.length > 0) {
 		var service_item = order_of_service[Math.max(0, key_moments.length - 1)].split(" - ")[0];
 		if (typeof auto_scenes[service_item] === 'string' && auto_scenes[service_item].length > 0) {
 			disabled = auto_scenes[service_item] === sceneName;
@@ -452,43 +519,40 @@ function SetTimeMode(timemode) {
 }
 
 function Reset() {
-	obs.send("GetStreamingStatus").then((data) => {
-		var show_warning = key_moments.length > 0 && (data.recording === true || data.streaming === true);
-		if (!show_warning || confirm("Are you sure you want to reset key-moments during a broadcast?")) {
-			if (key_moments.length > 0) {
-				document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
-			}
-
-			var min = show_warning ? 1 : 0;
-			while (key_moments.length > min) {
-				key_moments.pop();
-			}
-
-			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-			UpdateKeyMoments();
-
-			EnableAddKeyMoment();
-			EnableUndoKeyMoment();
-			EnableResetKeyMoments();
-			SetCurrentScene();
-
-			if (!show_warning) {
-				$("#tab_clock").attr("disabled", true);
-
-				start_time[time_modes.streaming] = null;
-				window.localStorage.removeItem("start-time-streaming");
-				$("#tab_streaming").attr("disabled", true);
-
-				start_time[time_modes.recording] = null;
-				window.localStorage.removeItem("start-time-recording");
-				$("#tab_recording").attr("disabled", true);
-
-				time_mode = null;
-				window.localStorage.removeItem("time-mode");
-			}
+	var show_warning = key_moments.length > 1 && (streaming || recording);
+	if (!show_warning || confirm("Are you sure you want to reset key-moments during a broadcast?")) {
+		if (key_moments.length > 0) {
+			document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
 		}
 
-	});
+		var min = show_warning ? 1 : 0;
+		while (key_moments.length > min) {
+			key_moments.pop();
+		}
+
+		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+		UpdateKeyMoments();
+
+		EnableAddKeyMoment();
+		EnableUndoKeyMoment();
+		EnableResetKeyMoments();
+		SetCurrentScene();
+
+		if (!show_warning) {
+			$("#tab_clock").attr("disabled", true);
+
+			start_time[time_modes.streaming] = null;
+			window.localStorage.removeItem("start-time-streaming");
+			$("#tab_streaming").attr("disabled", true);
+
+			start_time[time_modes.recording] = null;
+			window.localStorage.removeItem("start-time-recording");
+			$("#tab_recording").attr("disabled", true);
+
+			time_mode = null;
+			window.localStorage.removeItem("time-mode");
+		}
+	}
 }
 
 function EnableResetKeyMoments() {

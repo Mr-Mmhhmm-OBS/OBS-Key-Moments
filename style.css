@@ -6,14 +6,20 @@
 
 body {
    background-color: #242424;
-   margin: 0.25em 0.5em;
+   padding: 0.25em 0.5em;
+   margin: 0;
    position: absolute;
    font-size: 12px;
    top: 0;
    bottom: 0;
    left: 0;
    right: 0;
+   border: 1px solid #242424;
 }
+
+   body:not([obs-websocket-state=connected]) {
+      border: 1px solid red;
+   }
 
 h1 {
    text-align: center;
@@ -223,6 +229,71 @@ version{
    margin: 1em;
 }
 
-version:before{
+.obs-websocket-connection{
+   display: inline-block;
+   margin: 0.25em;
+}
+
+   .obs-websocket-connection:after {
+      display: inline-block;
+      font-style: italic;
+      content: "OBS WebSocket Disconnected";
+      padding: 0.25em;
+      border-radius: 0.5em;
+      border: 1px solid transparent;
+   }
+
+body:not([obs-websocket-state=connected]) .obs-websocket-connection:after {
+   animation-name: pulse-red;
+   animation-duration: 1.0s;
+   animation-iteration-count: infinite;
+   border: 1px solid #cc0000;
+}
+
+@keyframes pulse-red{
+   0%{
+      background-color: transparent;
+   }
+   50%{
+      background-color: #cc0000;
+   }
+   100%{
+      background-color: transparent;
+   }
+}
+
+@keyframes pulse-green {
+   0% {
+      background-color: transparent;
+   }
+
+   50% {
+      background-color: #00cc00;
+      color: white;
+   }
+
+   100% {
+      background-color: transparent;
+   }
+}
+
+[obs-websocket-state=connected] .obs-websocket-connection:after {
+   content: "OBS WebSocket Connected";
+   animation-name: pulse-green;
+   animation-duration: 1.0s;
+   animation-iteration-count: 1;
+   color: #00cc00;
+}
+
+#obs-websocket-connect:before {
+   content: "Connect";
+   display: inline-block;
+}
+
+[obs-websocket-state=connected] #obs-websocket-connect:before {
+   content: "Disconnect";
+}
+
+version:before {
    content: "v";
 }
