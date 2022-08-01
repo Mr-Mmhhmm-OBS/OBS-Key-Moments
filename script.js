@@ -18,8 +18,6 @@ function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
 var uuid = uuidv4();
-console.log(uuid);
-var broadcast_index = 0;
 const module_name = "OBS-Key-Moments";
 var connected = false;
 var streaming = false;
@@ -43,24 +41,18 @@ var obs_websocket_password = "";
 function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
 		start_time[mode] = new Date().getTime();
-		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
-
-		obs.call("BroadcastCustomEvent", {
-			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, start_time: start_time }
-		});
+		if (obs_websocket_host === uuid) {
+			obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "UPDATE", start_time: start_time } }).then((res) => {
+				if (key_moments.length === 0) {
+					AddKeyMoment();
+				}
+			});
+		}
 
 		$("#tab_" + mode).attr("disabled", null);
 		$("#tab_clock").attr("disabled", null);
 		if (time_mode != mode && start_time[time_mode] == null) {
 			SetTimeMode(time_modes.clock);
-		}
-
-		if (key_moments.length === 0) {
-			AddKeyMoment();
-		} else {
-			EnableAddKeyMoment();
-			EnableUndoKeyMoment();
-			EnableResetKeyMoments();
 		}
 	}
 }
@@ -73,8 +65,7 @@ function Stop() {
 
 function Connect() {
 	obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
-		console.log("connect");
-		obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, index: broadcast_index + 1, method: "RequestHost", uuid: uuid } });
+		obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "RequestHost", uuid: uuid } });
 
 		obs.call("GetStreamStatus").then((data) => {
 			streaming = data.outputActive;
@@ -308,7 +299,6 @@ $(window).on("load", function () {
 	obs.on("CustomEvent", (data) => {
 		if (data.sender === module_name) {
 			if (data.method === "HostInfo") {
-				broadcast_index = data.index;
 				if (obs_websocket_host === uuid && uuid !== data.host_uuid) {
 					host_time_offset = new Date().getTime() - data.time;
 					if (!data.tried.includes(uuid) && confirm("Are you the new host?")) {
@@ -317,21 +307,23 @@ $(window).on("load", function () {
 							eventData: {
 								sender: module_name,
 								method: "HostInfo",
-								index: broadcast_index + 1,
 								host_uuid: uuid,
 								time: new Date().getTime(),
 								tried: data.tried
 							}
 						}).then((res) => {
 							obs.call("BroadcastCustomEvent", {
-								eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time }
+								eventData: {
+									sender: module_name, method: "UPDATE",
+									host_uuid: uuid, auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time
+								}
 							});
 						});
 						obs_websocket_host = uuid;
 					} else {
 						obs_websocket_host = data.host_uuid;
 						obs.call("BroadcastCustomEvent", {
-							eventData: { sender: module_name, method: "RequestUpdate", index: broadcast_index + 1 }
+							eventData: { sender: module_name, method: "RequestUpdate" }
 						});
 					}
 				}
@@ -342,19 +334,19 @@ $(window).on("load", function () {
 					eventData: {
 						sender: module_name,
 						method: "HostInfo",
-						index: broadcast_index + 1,
 						host_uuid: uuid,
 						time: new Date().getTime(),
 						tried: [uuid]
 					}
 				});
-			} else if (typeof data.index === 'number' && data.index > broadcast_index) {
-				broadcast_index = data.index;
+			} else {
 				switch (data.method) {
 					case "RequestUpdate":
 						if (obs_websocket_host === uuid) {
 							obs.call("BroadcastCustomEvent", {
-								eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time }
+								eventData: {
+									sender: module_name, method: "UPDATE", auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time
+								}
 							});
 						}
 						break;
@@ -401,8 +393,9 @@ $(window).on("load", function () {
 						if (typeof data.key_moments === 'object') {
 							key_moments = data.key_moments;
 							window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+
+							$("#order-of-service li").attr("selected", null);
 							if (key_moments.length > 0) {
-								$("#order-of-service li").attr("selected", null);
 								$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
 							}
 							UpdateKeyMoments();
@@ -453,7 +446,9 @@ function EditAutoScenes(enable) {
 			}
 		}
 		obs.call("BroadcastCustomEvent", {
-			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, auto_scenes: auto_scenes }
+			eventData: {
+				sender: module_name, method: "UPDATE", auto_scenes: auto_scenes
+			}
 		});
 	}
 }
@@ -588,7 +583,9 @@ function AddKeyMoment() {
 		var service_item = order_of_service[key_moments.length];
 		key_moments.push({ name: service_item, timecode: timecode });
 		obs.call("BroadcastCustomEvent", {
-			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, key_moments: key_moments }
+			eventData: {
+				sender: module_name, method: "UPDATE", key_moments: key_moments
+			}
 		}, (error) => { console.error(error); });
 	}
 }
@@ -614,7 +611,9 @@ function UndoKeyMoment() {
 		key_moments.pop();
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 		obs.call("BroadcastCustomEvent", {
-			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, key_moments: key_moments }
+			eventData: {
+				sender: module_name, method: "UPDATE", key_moments: key_moments
+			}
 		});
 	}
 }
@@ -668,7 +667,9 @@ function Reset() {
 		}
 
 		obs.call("BroadcastCustomEvent", {
-			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, key_moments: key_moments, start_time: start_time }
+			eventData: {
+				sender: module_name, method: "UPDATE", key_moments: key_moments, start_time: start_time
+			}
 		});
 	}
 }
