@@ -287,6 +287,7 @@ $(window).on("load", function () {
 		connected = false;
 		$("html").attr("obs-websocket-state", "disconnected");
 		console.error(error);
+		alert("OBS Websocket Disconnected\n" + error.message);
 	});
 
 	function CreateServiceItem(item) {
