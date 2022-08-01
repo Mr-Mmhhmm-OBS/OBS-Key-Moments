@@ -275,6 +275,10 @@ $(window).on("load", function () {
 	obs.on("CurrentProgramSceneChanged", data => {
 		EnableSetCurrentScene(data.sceneName);
 	});
+	obs.on("SceneListChanged", (data) => {
+		console.log(data);
+		PopulateAutoScenes();
+	});
 	obs.on("ConnectionOpened", () => {
 		connected = true;
 		$("html").attr("obs-websocket-state", "connected");
@@ -285,7 +289,6 @@ $(window).on("load", function () {
 		$("html").attr("obs-websocket-state", "disconnected");
 		console.error(error);
 	});
-
 
 	function CreateServiceItem(item) {
 		$el = $("<li/>").append(
