@@ -5,7 +5,7 @@ Number.prototype.padStart = function (size) {
 }
 
 Number.prototype.formatDuration = function () {
-	value = Math.max(this, 0);
+	value = Math.max(Math.trunc(this / 1000), 0);
 	return (Math.floor(value / 60 / 60) % 60).padStart(2) + ":" + (Math.floor(value / 60) % 60).padStart(2) + ":" + (value % 60).padStart(2);
 }
 
@@ -17,12 +17,15 @@ String.prototype.toSeconds = function () {
 function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
-
+var uuid = uuidv4();
+console.log(uuid);
+var broadcast_index = 0;
+const module_name = "OBS-Key-Moments";
 var connected = false;
 var streaming = false;
 var recording = false;
 const time_modes = { streaming: "streaming", clock: "clock", recording: "recording" };
-var time_mode = null;
+var time_mode = time_modes.clock;
 var start_time = {};
 start_time[time_modes.streaming] = null;
 start_time[time_modes.recording] = null;
@@ -30,14 +33,22 @@ var order_of_service = [];
 var key_moments = [];
 var auto_scenes = {};
 var scene_names = [];
+
 const obs = new OBSWebSocket();
+var obs_websocket_host = uuid;
+var host_time_offset = 0;
 var obs_websocket_url = "";
 var obs_websocket_password = "";
 
 function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
-		start_time[mode] = Math.trunc(new Date().getTime() / 1000);
+		start_time[mode] = new Date().getTime();
 		window.localStorage.setItem("start-time-" + mode, start_time[mode]);
+
+		obs.call("BroadcastCustomEvent", {
+			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, start_time: start_time }
+		});
+
 		$("#tab_" + mode).attr("disabled", null);
 		$("#tab_clock").attr("disabled", null);
 		if (time_mode != mode && start_time[time_mode] == null) {
@@ -62,6 +73,9 @@ function Stop() {
 
 function Connect() {
 	obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
+		console.log("connect");
+		obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, index: broadcast_index + 1, method: "RequestHost", uuid: uuid } });
+
 		obs.call("GetStreamStatus").then((data) => {
 			streaming = data.outputActive;
 			obs.call("GetRecordStatus").then((data) => {
@@ -207,7 +221,7 @@ $(window).on("load", function () {
 	if (typeof value === 'string' && value.length > 0) {
 		time_mode = value;
 	} else {
-		time_mode = null;
+		time_mode = time_modes.clock;
 	}
 
 	value = window.localStorage.getItem("key-moments");
@@ -220,9 +234,7 @@ $(window).on("load", function () {
 	$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 ? "disabled" : null);
 	$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) || key_moments.length == 0 ? "disabled" : null);
 
-	if (time_mode != null) {
-		$("#tab_" + time_mode).attr("selected", "selected");
-	}
+	$("#tab_" + time_mode).attr("selected", "selected");
 
 	value = window.localStorage.getItem("order-of-service");
 	if (typeof value === 'string' && value.length > 0) {
@@ -239,7 +251,7 @@ $(window).on("load", function () {
 	}
 
 	if (key_moments.length > 0) {
-		document.getElementById("order-of-service").children[key_moments.length - 1].setAttribute("selected", "selected");
+		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
 	}
 
 	value = window.localStorage.getItem("obs-websocket-url");
@@ -253,6 +265,8 @@ $(window).on("load", function () {
 		obs_websocket_password = value;
 		$("#obs-websocket-password").val(value);
 	}
+
+	$("html").attr("obs-websocket-host", obs_websocket_host === uuid);
 
 	Connect();
 
@@ -291,6 +305,125 @@ $(window).on("load", function () {
 			alert("OBS Websocket Disconnected\n" + error.message);
 		}
 	});
+	obs.on("CustomEvent", (data) => {
+		if (data.sender === module_name) {
+			if (data.method === "HostInfo") {
+				broadcast_index = data.index;
+				if (obs_websocket_host === uuid && uuid !== data.host_uuid) {
+					host_time_offset = new Date().getTime() - data.time;
+					if (!data.tried.includes(uuid) && confirm("Are you the new host?")) {
+						data.tried.push(uuid);
+						obs.call("BroadcastCustomEvent", {
+							eventData: {
+								sender: module_name,
+								method: "HostInfo",
+								index: broadcast_index + 1,
+								host_uuid: uuid,
+								time: new Date().getTime(),
+								tried: data.tried
+							}
+						}).then((res) => {
+							obs.call("BroadcastCustomEvent", {
+								eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time }
+							});
+						});
+						obs_websocket_host = uuid;
+					} else {
+						obs_websocket_host = data.host_uuid;
+						obs.call("BroadcastCustomEvent", {
+							eventData: { sender: module_name, method: "RequestUpdate", index: broadcast_index + 1 }
+						});
+					}
+				}
+				$("html").attr("obs-websocket-host", obs_websocket_host === uuid);
+			}
+			else if (data.method === "RequestHost" && obs_websocket_host === uuid && data.uuid !== uuid) {
+				obs.call("BroadcastCustomEvent", {
+					eventData: {
+						sender: module_name,
+						method: "HostInfo",
+						index: broadcast_index + 1,
+						host_uuid: uuid,
+						time: new Date().getTime(),
+						tried: [uuid]
+					}
+				});
+			} else if (typeof data.index === 'number' && data.index > broadcast_index) {
+				broadcast_index = data.index;
+				switch (data.method) {
+					case "RequestUpdate":
+						if (obs_websocket_host === uuid) {
+							obs.call("BroadcastCustomEvent", {
+								eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time }
+							});
+						}
+						break;
+					case "UPDATE":
+						if (typeof data.auto_scenes === 'object') {
+							auto_scenes = data.auto_scenes;
+							window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
+							$("#auto-scenes").empty();
+							for (var service_item in auto_scenes) {
+								AddAutoScene(service_item);
+							}
+							PopulateAutoScenes();
+						}
+
+						if (typeof data.order_of_service === 'object') {
+							order_of_service = data.order_of_service;
+							window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
+
+							$("#order-of-service").empty();
+							if (order_of_service.length > 0) {
+								for (var index = 0; index < order_of_service.length; index++) {
+									$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
+								}
+							} else {
+								$("#order-of-service").append(CreateServiceItem());
+							}
+						}
+
+						if (typeof data.order_of_service === 'object' || typeof data.auto_scenes === 'object') {
+							for (var el of $("#order-of-service .service-item")) {
+								var value = el.innerText;
+								el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
+							}
+						}
+
+						if (typeof data.start_time === 'object') {
+							start_time = data.start_time;
+
+							$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 ? "disabled" : null);
+							$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 ? "disabled" : null);
+							$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) || key_moments.length == 0 ? "disabled" : null);
+						}
+
+						if (typeof data.key_moments === 'object') {
+							key_moments = data.key_moments;
+							window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+							if (key_moments.length > 0) {
+								$("#order-of-service li").attr("selected", null);
+								$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
+							}
+							UpdateKeyMoments();
+						}
+
+						EnableAddKeyMoment();
+						EnableUndoKeyMoment();
+						obs.call("GetCurrentProgramScene").then(data => {
+							EnableSetCurrentScene(data.currentProgramSceneName);
+						});
+						EnableResetKeyMoments();
+
+						if (obs_websocket_host === uuid) {
+							SetCurrentScene();
+						}
+						break;
+					default:
+				}
+			}
+		}
+	});
 
 	function CreateServiceItem(item) {
 		$el = $("<li/>").append(
@@ -319,11 +452,9 @@ function EditAutoScenes(enable) {
 				auto_scenes[service_item] = item.children[2].value;
 			}
 		}
-		window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
-		for (var el of $("#order-of-service .service-item")) {
-			var value = el.innerText;
-			el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
-		}
+		obs.call("BroadcastCustomEvent", {
+			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, auto_scenes: auto_scenes }
+		});
 	}
 }
 
@@ -405,15 +536,25 @@ function SelectOption(selectElement, optionValToSelect) {
 var countdown_timeout = null;
 function EnableAddKeyMoment(countdown) {
 	if (key_moments.length < order_of_service.length && (streaming || recording)) {
-		if (typeof countdown === 'number' && countdown > 0) {
-			$("#add-key-moment").attr("count-down", countdown);
-			if (countdown_timeout != null) {
-				clearTimeout(countdown_timeout);
+		if (typeof countdown === 'number') {
+			if (countdown > 0) {
+				$("#add-key-moment").attr("count-down", countdown);
+				if (countdown_timeout != null) {
+					clearTimeout(countdown_timeout);
+				}
+				countdown_timeout = setTimeout(function () {
+					countdown--;
+					EnableAddKeyMoment(countdown);
+				}, (1000));
+			} else {
+				if (countdown_timeout != null) {
+					clearTimeout(countdown_timeout);
+					countdown_timeout = null;
+				}
+				$("#add-key-moment").removeAttr('count-down');
+
+				document.getElementById("add-key-moment").disabled = false;
 			}
-			countdown_timeout = setTimeout(function () {
-				countdown--;
-				EnableAddKeyMoment(countdown);
-			}, (1000));
 		} else {
 			if (countdown_timeout != null) {
 				clearTimeout(countdown_timeout);
@@ -424,10 +565,10 @@ function EnableAddKeyMoment(countdown) {
 			var el = document.getElementById("add-key-moment");
 			el.disabled = false;
 			if (key_moments.length > 0) {
-				var key_moment_duration = Math.trunc((key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000));
-				if (key_moment_duration > 0 && key_moment_duration <= 10) {
+				var key_moment_duration = new Date().getTime() - key_moments[key_moments.length - 1].timecode;
+				if (key_moment_duration < 10000) {
 					el.disabled = true;
-					EnableAddKeyMoment(Math.trunc((key_moments[key_moments.length - 1].timecode + 10) - (new Date().getTime() / 1000)));
+					EnableAddKeyMoment(Math.trunc(((key_moments[key_moments.length - 1].timecode + 10000 + host_time_offset) - new Date().getTime()) / 1000));
 				}
 			}
 		}
@@ -443,34 +584,22 @@ function EnableAddKeyMoment(countdown) {
 
 function AddKeyMoment() {
 	if (key_moments.length < order_of_service.length && order_of_service[key_moments.length].length > 0) {
-		if (key_moments.length > 0) {
-			$("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
-		}
-		$("#order-of-service li:nth-child(" + (key_moments.length + 1) + ")").attr("selected", "selected");
-
-		var timecode = Math.trunc(new Date().getTime() / 1000);
+		var timecode = Math.trunc(new Date().getTime());
 		var service_item = order_of_service[key_moments.length];
 		key_moments.push({ name: service_item, timecode: timecode });
-		UpdateKeyMoments();
-		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-		SetCurrentScene();
-		EnableResetKeyMoments();
-
-		document.getElementById("add-key-moment").disabled = true;
-		EnableAddKeyMoment(Math.min(key_moments.length === 1 ? 10 : timecode - key_moments[key_moments.length - 2].timecode, 10));
-		EnableUndoKeyMoment();
+		obs.call("BroadcastCustomEvent", {
+			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, key_moments: key_moments }
+		}, (error) => { console.error(error); });
 	}
 }
 
 function UpdateKeyMoments() {
 	var key_moments_text = "";
-	if (time_mode != null) {
-		for (var i = 0; i < key_moments.length; i++) {
-			if (time_mode === time_modes.clock) {
-				key_moments_text += (i > 0 ? "\n" : "") + new Date(key_moments[i].timecode * 1000).toTimeString().split(' ')[0] + " " + key_moments[i].name;
-			} else {
-				key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
-			}
+	for (var i = 0; i < key_moments.length; i++) {
+		if (time_mode === time_modes.clock) {
+			key_moments_text += (i > 0 ? "\n" : "") + new Date(key_moments[i].timecode).toTimeString().split(' ')[0] + " " + key_moments[i].name;
+		} else {
+			key_moments_text += (i > 0 ? "\n" : "") + (key_moments[i].timecode - start_time[time_mode]).formatDuration() + " " + key_moments[i].name;
 		}
 	}
 	$("#key-moments").val(key_moments_text);
@@ -482,20 +611,12 @@ function EnableUndoKeyMoment() {
 
 function UndoKeyMoment() {
 	if (key_moments.length > 0 && confirm("Are you sure you want to undo the last key-moment?")) {
-		$("#order-of-service li:nth-child(" + key_moments.length + ")").removeAttr("selected");
-
 		key_moments.pop();
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-
-		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
-
-		UpdateKeyMoments();
-
-		SetCurrentScene();
-		EnableAddKeyMoment();
+		obs.call("BroadcastCustomEvent", {
+			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, key_moments: key_moments }
+		});
 	}
-
-	EnableUndoKeyMoment();
 }
 
 function SetCurrentScene() {
@@ -530,39 +651,25 @@ function SetTimeMode(timemode) {
 }
 
 function Reset() {
-	var show_warning = key_moments.length > 1 && (streaming || recording);
+	var show_warning = key_moments.length >= 1 && (streaming || recording);
 	if (!show_warning || confirm("Are you sure you want to reset key-moments during a broadcast?")) {
-		if (key_moments.length > 0) {
-			document.getElementById("order-of-service").children[key_moments.length - 1].removeAttribute("selected");
-		}
-
 		var min = show_warning ? 1 : 0;
 		while (key_moments.length > min) {
 			key_moments.pop();
 		}
 
-		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-		UpdateKeyMoments();
-
-		EnableAddKeyMoment();
-		EnableUndoKeyMoment();
-		EnableResetKeyMoments();
-		SetCurrentScene();
-
 		if (!show_warning) {
-			$("#tab_clock").attr("disabled", true);
 
 			start_time[time_modes.streaming] = null;
-			window.localStorage.removeItem("start-time-streaming");
-			$("#tab_streaming").attr("disabled", true);
 
 			start_time[time_modes.recording] = null;
-			window.localStorage.removeItem("start-time-recording");
-			$("#tab_recording").attr("disabled", true);
 
-			time_mode = null;
-			window.localStorage.removeItem("time-mode");
+			time_mode = time_modes.clock;
 		}
+
+		obs.call("BroadcastCustomEvent", {
+			eventData: { sender: module_name, method: "UPDATE", index: broadcast_index + 1, key_moments: key_moments, start_time: start_time }
+		});
 	}
 }
 

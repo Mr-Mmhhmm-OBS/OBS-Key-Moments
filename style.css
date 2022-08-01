@@ -227,6 +227,7 @@ button#add-auto-scene {
 .row {
    display: flex;
    flex-direction: row;
+   width: 100%;
 }
 
 #add-key-moment:enabled {
@@ -248,7 +249,7 @@ version{
    margin: 1em;
 }
 
-.obs-websocket-connection{
+.obs-websocket-connection {
    display: inline-block;
    margin: 0.25em;
 }
@@ -311,6 +312,15 @@ version{
 
 [obs-websocket-state=connected] #obs-websocket-connect:before {
    content: "Disconnect";
+}
+
+#obs-websocket-host {
+   display: inline;
+}
+
+[obs-websocket-state=connected][obs-websocket-host=true] #obs-websocket-host:after {
+   content: "Host";
+   display: inline-block;
 }
 
 version:before {

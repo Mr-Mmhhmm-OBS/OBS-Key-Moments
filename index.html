@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+   <title>Key Moments</title>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
    <link rel="stylesheet" href="style.css">
    <link rel="stylesheet" href="tabs.css">
    <script type="text/javascript" src="jquery-3.6.0.js"></script>
@@ -29,9 +31,9 @@
          <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
          <button id="undo-key-moment" onclick="UndoKeyMoment();" disabled>Undo</button>
       </div>
-
       <span class="obs-websocket-connection"></span>
-      <version>1.3</version>
+      <span id="obs-websocket-host"></span>
+      <version>1.4</version>
    </main>
    <div id="auto-scenes-editor" class="menu" style="display:none;">
       <div>
