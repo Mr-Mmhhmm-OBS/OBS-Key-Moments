@@ -286,8 +286,10 @@ $(window).on("load", function () {
 	obs.on("ConnectionClosed", (error) => {
 		connected = false;
 		$("html").attr("obs-websocket-state", "disconnected");
-		console.error(error);
-		alert("OBS Websocket Disconnected\n" + error.message);
+		if (typeof error === 'object' && typeof error.message === 'string' && error.message.length > 0) {
+			console.error(error);
+			alert("OBS Websocket Disconnected\n" + error.message);
+		}
 	});
 
 	function CreateServiceItem(item) {
