@@ -276,7 +276,6 @@ $(window).on("load", function () {
 		EnableSetCurrentScene(data.sceneName);
 	});
 	obs.on("SceneListChanged", (data) => {
-		console.log(data);
 		PopulateAutoScenes();
 	});
 	obs.on("ConnectionOpened", () => {
