@@ -384,10 +384,11 @@ $(window).on("load", function () {
 
 						if (typeof data.start_time === 'object') {
 							start_time = data.start_time;
-
-							$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null || key_moments.length == 0 ? "disabled" : null);
-							$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null || key_moments.length == 0 ? "disabled" : null);
-							$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) || key_moments.length == 0 ? "disabled" : null);
+							window.localStorage.setItem("start-time-recording", start_time[time_modes.recording]);
+							window.localStorage.setItem("start-time-streaming", start_time[time_modes.streaming]);
+							$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null ? "disabled" : null);
+							$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null ? "disabled" : null);
+							$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) ? "disabled" : null);
 						}
 
 						if (typeof data.key_moments === 'object') {
