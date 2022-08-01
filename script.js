@@ -79,7 +79,7 @@ function Connect() {
 		});
 	}, (error) => {
 		console.error("Failed to Connect", error.code, error.message);
-		alert("Failed to Connect\n" + error.code + "\n" + error.message);
+		alert("Failed to Connect\nError Code:" + error.code + "\n" + error.message);
 	});
 }
 
