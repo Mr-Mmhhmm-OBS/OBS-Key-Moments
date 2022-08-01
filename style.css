@@ -1,4 +1,4 @@
-@media (min-resolution: 240dpi) and (max-resolution: 900dpi){
+@media (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-width: 480px){
    html body{
       font-size: 36px;
    }
