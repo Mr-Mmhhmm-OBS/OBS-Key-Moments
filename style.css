@@ -16,27 +16,25 @@ html {
 
 html, body {
    margin: 0;
+   height: 100%;
 }
 
 body {
    font-size: 12px;
+   display: flex;
+   flex-direction: column;
 }
 
-full-screen-overlay {
-   position: fixed;
-   pointer-events: none;
-   top: 0;
-   right: 0;
-   bottom: 0;
-   left: 0;
-}
-
-[obs-websocket-state=disconnected] full-screen-overlay {
+[obs-websocket-state=disconnected] body {
    border: 1px solid red;
+   box-sizing: border-box;
 }
 
 main {
+   position: relative;
    padding: 0.25em 0.5em;
+   flex: 1 1 auto;
+   overflow-y: auto;
 }
 
 
@@ -186,6 +184,33 @@ button {
       min-height: fit-content;
    }
 
+#obs-websocket-settings .row > label {
+   width: 6em;
+   text-align: right;
+   line-height: 2em;
+   margin-right: 0.5em;
+}
+
+#obs-websocket-settings .row > input {
+   display: block;
+   width: 100%;
+}
+
+#obs-websocket-connect:before {
+   content: "Connect";
+   display: inline-block;
+}
+
+[obs-websocket-state=connected] #obs-websocket-connect:before {
+   content: "Disconnect";
+}
+
+[obs-websocket-state=disconnected] #obs-websocket-connect {
+   animation: pulse-red;
+   animation-iteration-count: infinite;
+   animation-duration: 1s;
+}
+
 button#add-auto-scene {
    float: left;
    margin-left: 1em;
@@ -241,35 +266,43 @@ button#add-auto-scene {
    content: " (" attr(count-down) ")";
 }
 
-version{
+footer {
+   display: flex;
+   font-size: 0.9em;
+   background-color: #363636;
+}
+
+   footer span {
+      display: inline-block;
+   }
+
+   footer #obs-websocket-host, footer #version {
+      margin: 0 0.5em;
+      padding: 0.1em;
+   }
+
+[obs-websocket-state=disconnected] footer {
+   animation-name: pulse-red;
+   animation-duration: 1.0s;
+   animation-iteration-count: infinite;
+}
+
+[obs-websocket-state=connected] footer,
+[obs-websocket-state=connected] .obs-websocket-connection:after {
+   animation-name: pulse-green;
+   animation-duration: 1.0s;
+   animation-iteration-count: 1;
+}
+
+#version{
    color: white;
    font-weight: 100;
    font-style: italic;
-   font-size: 0.85em;
-   float: right;
-   margin: 1em;
 }
 
-#obs-websocket-settings .row > label{
-   width: 6em;
-   text-align: right;
-   line-height: 2em;
-   margin-right: 0.5em;
-}
-
-#obs-websocket-settings .row > input {
-   display: block;
-   width: 100%;
-}
-
-.obs-websocket-connection {
-   display: inline-block;
-}
-
-#settings .obs-websocket-connection{
-   display: block;
-   text-align: center;
-}
+   #version:before {
+      content: "v";
+   }
 
    .obs-websocket-connection:after {
       content: "OBS WebSocket Not Connected";
@@ -277,33 +310,27 @@ version{
       font-style: italic;
       border-radius: 0.5em;
       border: 1px solid transparent;
-      padding: 0.25em;
-      margin: 0.25em;
    }
 
 [obs-websocket-state=disconnected] .obs-websocket-connection:after {
    content: "OBS WebSocket Disconnected";
-   animation-name: pulse-red;
-   animation-duration: 1.0s;
-   animation-iteration-count: infinite;
-   border: 1px solid #cc0000;
 }
 
 @keyframes pulse-red{
-   0%{
-      background-color: transparent;
+   0% {
+      background-color: #363636;
    }
    50%{
       background-color: #cc0000;
    }
-   100%{
-      background-color: transparent;
+   100% {
+      background-color: #363636;
    }
 }
 
 @keyframes pulse-green {
    0% {
-      background-color: transparent;
+      background-color: #363636;
    }
 
    50% {
@@ -312,37 +339,15 @@ version{
    }
 
    100% {
-      background-color: transparent;
+      background-color: #363636;
    }
 }
 
-[obs-websocket-state=connected] main .obs-websocket-connection:after,
-[obs-websocket-state=connected] #settings .obs-websocket-connection:after {
+[obs-websocket-state=connected] .obs-websocket-connection:after{
    content: "OBS WebSocket Connected";
-   animation-name: pulse-green;
-   animation-duration: 1.0s;
-   animation-iteration-count: 1;
    color: #00cc00;
-}
-
-#obs-websocket-connect:before {
-   content: "Connect";
-   display: inline-block;
-}
-
-[obs-websocket-state=connected] #obs-websocket-connect:before {
-   content: "Disconnect";
-}
-
-#obs-websocket-host {
-   display: inline;
 }
 
 [obs-websocket-state=connected][obs-websocket-host=true] #obs-websocket-host:after {
    content: "Host";
-   display: inline-block;
-}
-
-version:before {
-   content: "v";
 }

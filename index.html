@@ -31,27 +31,27 @@
          <button id="reset-key-moments" onclick="Reset();">Reset Key-Moments</button>
          <button id="undo-key-moment" onclick="UndoKeyMoment();" disabled>Undo</button>
       </div>
-      <span class="obs-websocket-connection"></span>
-      <span id="obs-websocket-host"></span>
-      <version>1.5</version>
-   </main>
-   <div id="settings" class="menu" style="display:none;">
-      <div>
-         <div id="obs-websocket-settings">
-            <div class="row"><label>Address: </label><input id="obs-websocket-url" type="url" placeholder="ws://localhost:port" /></div>
-            <div class="row"><label>Password: </label><input id="obs-websocket-password" type="password" /></div>
-            <span class="obs-websocket-connection"></span>
-            <button id="obs-websocket-connect"></button>
+      <div id="settings" class="menu" style="display:none;">
+         <div>
+            <div id="obs-websocket-settings">
+               <div class="row"><label>Address: </label><input id="obs-websocket-url" type="url" placeholder="ws://localhost:port" /></div>
+               <div class="row"><label>Password: </label><input id="obs-websocket-password" type="password" /></div>
+               <button id="obs-websocket-connect"></button>
+            </div>
+            <h1>Auto Scenes</h1>
+            <div id="auto-scenes"></div>
+            <br />
+            <button id="add-auto-scene" onclick="AddAutoScene();">+</button>
+            <button onclick="EditAutoScenes(false);" class="close">Close</button>
          </div>
-         
-         
-         <h1>Auto Scenes</h1>
-         <div id="auto-scenes"></div>
-         <br />
-         <button id="add-auto-scene" onclick="AddAutoScene();">+</button>
-         <button onclick="EditAutoScenes(false);" class="close">Close</button>
       </div>
-   </div>
-   <full-screen-overlay></full-screen-overlay>
+   </main>
+   <footer>
+      <div class="row">
+         <span class="obs-websocket-connection"></span>
+         <span id="obs-websocket-host"></span>
+      </div>
+      <span id="version">1.5</span>
+   </footer>
 </body>
 </html>
