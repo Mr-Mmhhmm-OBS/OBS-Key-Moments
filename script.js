@@ -542,18 +542,19 @@ function SelectOption(selectElement, optionValToSelect) {
 }
 
 var countdown_timeout = null;
-function EnableAddKeyMoment(countdown) {
+function EnableAddKeyMoment(duration) {
 	if (key_moments.length < order_of_service.length && (streaming || recording)) {
-		if (typeof countdown === 'number') {
-			if (countdown > 0) {
-				$("#add-key-moment").attr("count-down", countdown);
+		if (typeof duration === 'number') {
+			if (duration > 0) {
+				$("#add-key-moment").attr("count-down", Math.ceil(duration / 1000));
 				if (countdown_timeout != null) {
 					clearTimeout(countdown_timeout);
 				}
+				var wait = duration % 1 === 0 ? 1000 : duration % 1;
 				countdown_timeout = setTimeout(function () {
-					countdown--;
-					EnableAddKeyMoment(countdown);
-				}, (1000));
+					duration -= wait;
+					EnableAddKeyMoment(duration);
+				}, (wait));
 			} else {
 				if (countdown_timeout != null) {
 					clearTimeout(countdown_timeout);
@@ -576,7 +577,7 @@ function EnableAddKeyMoment(countdown) {
 				var key_moment_duration = new Date().getTime() - key_moments[key_moments.length - 1].timecode;
 				if (key_moment_duration < 10000) {
 					el.disabled = true;
-					EnableAddKeyMoment(Math.trunc(((key_moments[key_moments.length - 1].timecode + 10000 + host_time_offset) - new Date().getTime()) / 1000));
+					EnableAddKeyMoment((key_moments[key_moments.length - 1].timecode + 10000 + host_time_offset) - new Date().getTime());
 				}
 			}
 		}
