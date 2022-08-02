@@ -9,17 +9,15 @@ Number.prototype.formatDuration = function () {
 	return (Math.floor(value / 60 / 60) % 60).padStart(2) + ":" + (Math.floor(value / 60) % 60).padStart(2) + ":" + (value % 60).padStart(2);
 }
 
-String.prototype.toSeconds = function () {
-	if (!this) return null; var hms = this.split(':');
-	return (+hms[0]) * 60 * 60 + (+hms[1]) * 60 + (+hms[2] || 0);
-}
-
 function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
 var uuid = uuidv4();
 const module_name = "OBS-Key-Moments";
-var connected = false;
+
+var obs_websocket_connection_state = { disconnected: "disconnected", connecting: "connecting", connected: "connected" };
+var obs_websocket_connection = obs_websocket_connection_state.disconnected;
+
 var streaming = false;
 var recording = false;
 const time_modes = { streaming: "streaming", clock: "clock", recording: "recording" };
@@ -64,28 +62,33 @@ function Stop() {
 }
 
 function Connect() {
-	obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
-		obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "RequestHost", uuid: uuid } });
+	if (obs_websocket_connection === obs_websocket_connection_state.disconnected) {
+		obs_websocket_connection = obs_websocket_connection_state.connecting;
+		obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
+			obs_websocket_connection = obs_websocket_connection_state.connected;
+			obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "RequestHost", uuid: uuid } });
 
-		obs.call("GetStreamStatus").then((data) => {
-			streaming = data.outputActive;
-			obs.call("GetRecordStatus").then((data) => {
-				recording = data.outputActive;
-				EnableAddKeyMoment();
-				EnableUndoKeyMoment();
+			obs.call("GetStreamStatus").then((data) => {
+				streaming = data.outputActive;
+				obs.call("GetRecordStatus").then((data) => {
+					recording = data.outputActive;
+					EnableAddKeyMoment();
+					EnableUndoKeyMoment();
+				});
 			});
-		});
 
-		PopulateAutoScenes();
-		EnableResetKeyMoments();
+			PopulateAutoScenes();
+			EnableResetKeyMoments();
 
-		obs.call("GetCurrentProgramScene").then(data => {
-			EnableSetCurrentScene(data.currentProgramSceneName);
+			obs.call("GetCurrentProgramScene").then(data => {
+				EnableSetCurrentScene(data.currentProgramSceneName);
+			});
+		}, (error) => {
+			obs_websocket_connection = obs_websocket_connection_state.disconnected;
+			console.error("Failed to Connect", error.code, error.message);
+			alert("Failed to Connect\nError Code:" + error.code + "\n" + error.message);
 		});
-	}, (error) => {
-		console.error("Failed to Connect", error.code, error.message);
-		alert("Failed to Connect\nError Code:" + error.code + "\n" + error.message);
-	});
+	}
 }
 
 function Disconnect() {
@@ -173,7 +176,7 @@ $(window).on("load", function () {
 	});
 
 	$("#obs-websocket-connect").on("click", function (e) {
-		if (connected) {
+		if (obs_websocket_connection !== obs_websocket_connection_state.disconnected) {
 			Disconnect();
 		} else {
 			Connect();
@@ -181,7 +184,7 @@ $(window).on("load", function () {
 	});
 
 	$(".obs-websocket-connection").on("click", function (e) {
-		if (!connected) {
+		if (obs_websocket_connection === obs_websocket_connection_state.disconnected) {
 			Connect();
 		}
 	});
@@ -284,12 +287,10 @@ $(window).on("load", function () {
 		PopulateAutoScenes();
 	});
 	obs.on("ConnectionOpened", () => {
-		connected = true;
 		$("html").attr("obs-websocket-state", "connected");
 		console.log("OBS WebSocket Connected");
 	});
 	obs.on("ConnectionClosed", (error) => {
-		connected = false;
 		$("html").attr("obs-websocket-state", "disconnected");
 		if (typeof error === 'object' && typeof error.message === 'string' && error.message.length > 0) {
 			console.error(error);
@@ -384,8 +385,19 @@ $(window).on("load", function () {
 
 						if (typeof data.start_time === 'object') {
 							start_time = data.start_time;
-							window.localStorage.setItem("start-time-recording", start_time[time_modes.recording]);
-							window.localStorage.setItem("start-time-streaming", start_time[time_modes.streaming]);
+
+							if (typeof start_time[time_modes.recording] === 'number') {
+								window.localStorage.setItem("start-time-recording", start_time[time_modes.recording]);
+							} else {
+								window.localStorage.removeItem("start-time-recording");
+							}
+
+							if (typeof start_time[time_modes.streaming] === 'number') {
+								window.localStorage.setItem("start-time-streaming", start_time[time_modes.streaming]);
+							} else {
+								window.localStorage.removeItem("start-time-streaming");
+							}
+
 							$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null ? "disabled" : null);
 							$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null ? "disabled" : null);
 							$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) ? "disabled" : null);
@@ -435,7 +447,7 @@ $(window).on("load", function () {
 });
 
 function EditAutoScenes(enable) {
-	document.getElementById("auto-scenes-editor").style.display = (enable ? "" : "none");
+	document.getElementById("settings").style.display = (enable ? "" : "none");
 	if (enable) {
 
 	} else {
