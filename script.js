@@ -65,7 +65,6 @@ function Connect() {
 	if (obs_websocket_connection === obs_websocket_connection_state.disconnected) {
 		obs_websocket_connection = obs_websocket_connection_state.connecting;
 		obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
-			obs_websocket_connection = obs_websocket_connection_state.connected;
 			obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "RequestHost", uuid: uuid } });
 
 			obs.call("GetStreamStatus").then((data) => {
@@ -84,7 +83,6 @@ function Connect() {
 				EnableSetCurrentScene(data.currentProgramSceneName);
 			});
 		}, (error) => {
-			obs_websocket_connection = obs_websocket_connection_state.disconnected;
 			console.error("Failed to Connect", error.code, error.message);
 			alert("Failed to Connect\nError Code:" + error.code + "\n" + error.message);
 		});
@@ -287,10 +285,12 @@ $(window).on("load", function () {
 		PopulateAutoScenes();
 	});
 	obs.on("ConnectionOpened", () => {
+		obs_websocket_connection = obs_websocket_connection_state.connected;
 		$("html").attr("obs-websocket-state", "connected");
 		console.log("OBS WebSocket Connected");
 	});
 	obs.on("ConnectionClosed", (error) => {
+		obs_websocket_connection = obs_websocket_connection_state.disconnected;
 		$("html").attr("obs-websocket-state", "disconnected");
 		if (typeof error === 'object' && typeof error.message === 'string' && error.message.length > 0) {
 			console.error(error);

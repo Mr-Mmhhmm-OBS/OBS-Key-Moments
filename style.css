@@ -253,6 +253,10 @@ version{
    display: inline-block;
 }
 
+#settings .obs-websocket-connection{
+   display: block;
+}
+
    .obs-websocket-connection:after {
       content: "OBS WebSocket Not Connected";
       display: inline-block;
