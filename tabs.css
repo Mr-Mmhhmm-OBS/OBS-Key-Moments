@@ -8,7 +8,6 @@ tab:first-child {
 
 tab:last-child {
    border-radius: 0 0.5em 0 0;
-   border-width: 0.15em;
 }
 
 tab {
