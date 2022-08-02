@@ -132,7 +132,7 @@ button, tab, input, select {
    background-color: #454545;
 }
 
-button, tab {
+button {
    display: block;
    margin: 0.05em;
    width: 100%;
@@ -142,6 +142,7 @@ button, tab {
    outline: none;
    height: 1.75em;
    text-anchor:middle;
+   user-select: none;
 }
 
    button:hover {
@@ -249,12 +250,25 @@ version{
    margin: 1em;
 }
 
+#obs-websocket-settings .row > label{
+   width: 6em;
+   text-align: right;
+   line-height: 2em;
+   margin-right: 0.5em;
+}
+
+#obs-websocket-settings .row > input {
+   display: block;
+   width: 100%;
+}
+
 .obs-websocket-connection {
    display: inline-block;
 }
 
 #settings .obs-websocket-connection{
    display: block;
+   text-align: center;
 }
 
    .obs-websocket-connection:after {
