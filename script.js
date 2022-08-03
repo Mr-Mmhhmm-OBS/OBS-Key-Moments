@@ -138,25 +138,24 @@ $(window).on("load", function () {
 		var index = IndexOfElement(e.currentTarget.parentElement);
 		var value = e.currentTarget.innerText;
 		order_of_service[index] = value;
-		window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
 
 		if (value.length === 0 && order_of_service.length > 1) {
 			// Remove empty service item
 			e.currentTarget.parentElement.remove();
 			order_of_service.splice(index, 1);
-		} else {
-			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
 		}
 
 		if (index < key_moments.length) {
 			for (var i = 0; i < key_moments.length; i++) {
 				key_moments[i].name = order_of_service[i];
 			}
-			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-			UpdateKeyMoments();
 		}
 
-		EnableAddKeyMoment();
+		obs.call("BroadcastCustomEvent", {
+			eventData: {
+				sender: module_name, method: "UPDATE", order_of_service: order_of_service, key_moments: key_moments
+			}
+		}, (error) => { console.error(error); });
 	});
 
 	$("tabgroup[tab-group=timing]").on("click", "tab[value]:not([disabled]):not([selected])", function (e) {
@@ -448,9 +447,7 @@ $(window).on("load", function () {
 
 function EditAutoScenes(enable) {
 	document.getElementById("settings").style.display = (enable ? "" : "none");
-	if (enable) {
-
-	} else {
+	if (!enable) {
 		auto_scenes = {};
 		for (var item of document.getElementById("auto-scenes").children) {
 			var service_item = item.children[1].value;
