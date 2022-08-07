@@ -139,12 +139,6 @@ $(window).on("load", function () {
 		var value = e.currentTarget.innerText;
 		order_of_service[index] = value;
 
-		if (value.length === 0 && order_of_service.length > 1) {
-			// Remove empty service item
-			e.currentTarget.parentElement.remove();
-			order_of_service.splice(index, 1);
-		}
-
 		if (index < key_moments.length) {
 			for (var i = 0; i < key_moments.length; i++) {
 				key_moments[i].name = order_of_service[i];
