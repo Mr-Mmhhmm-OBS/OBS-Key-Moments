@@ -40,7 +40,7 @@ function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
 		start_time[mode] = new Date().getTime();
 		if (obs_websocket_host === uuid) {
-			obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "UPDATE", start_time: start_time } }).then((res) => {
+			obs.call("BroadcastCustomEvent", { eventData: { module: module_name, method: "UPDATE", start_time: start_time } }).then((res) => {
 				if (key_moments.length === 0) {
 					AddKeyMoment();
 				}
@@ -65,7 +65,7 @@ function Connect() {
 	if (obs_websocket_connection === obs_websocket_connection_state.disconnected) {
 		obs_websocket_connection = obs_websocket_connection_state.connecting;
 		obs.connect(obs_websocket_url.length > 0 ? obs_websocket_url : undefined, obs_websocket_password.length > 0 ? obs_websocket_password : undefined).then((res) => {
-			obs.call("BroadcastCustomEvent", { eventData: { sender: module_name, method: "RequestHost", uuid: uuid } });
+			obs.call("BroadcastCustomEvent", { eventData: { module: module_name, method: "RequestHost", uuid: uuid } });
 
 			obs.call("GetStreamStatus").then((data) => {
 				streaming = data.outputActive;
@@ -138,16 +138,29 @@ $(window).on("load", function () {
 		var index = IndexOfElement(e.currentTarget.parentElement);
 		var value = e.currentTarget.innerText;
 		order_of_service[index] = value;
+		window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
+
+		if (value.length === 0 && order_of_service.length > 1) {
+			// Remove empty service item
+			e.currentTarget.parentElement.remove();
+			order_of_service.splice(index, 1);
+		} else {
+			e.currentTarget.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
+		}
 
 		if (index < key_moments.length) {
 			for (var i = 0; i < key_moments.length; i++) {
 				key_moments[i].name = order_of_service[i];
 			}
+			window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+			UpdateKeyMoments();
 		}
+
+		EnableAddKeyMoment();
 
 		obs.call("BroadcastCustomEvent", {
 			eventData: {
-				sender: module_name, method: "UPDATE", order_of_service: order_of_service, key_moments: key_moments
+				module: module_name, sender: uuid, method: "UPDATE", order_of_service: order_of_service, key_moments: key_moments
 			}
 		}, (error) => { console.error(error); });
 	});
@@ -291,33 +304,35 @@ $(window).on("load", function () {
 		}
 	});
 	obs.on("CustomEvent", (data) => {
-		if (data.sender === module_name) {
+		if (data.module === module_name) {
 			if (data.method === "HostInfo") {
-				if (obs_websocket_host === uuid && uuid !== data.host_uuid) {
+				if (obs_websocket_host === uuid && uuid !== data.sender) {
 					host_time_offset = new Date().getTime() - data.time;
 					if (!data.tried.includes(uuid) && confirm("Are you the new host?")) {
 						data.tried.push(uuid);
 						obs.call("BroadcastCustomEvent", {
 							eventData: {
-								sender: module_name,
+								module: module_name,
 								method: "HostInfo",
-								host_uuid: uuid,
+								sender: uuid,
 								time: new Date().getTime(),
 								tried: data.tried
 							}
 						}).then((res) => {
 							obs.call("BroadcastCustomEvent", {
 								eventData: {
-									sender: module_name, method: "UPDATE",
-									host_uuid: uuid, auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time
+									module: module_name,
+									method: "UPDATE",
+									sender: uuid,
+									auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time
 								}
 							});
 						});
 						obs_websocket_host = uuid;
 					} else {
-						obs_websocket_host = data.host_uuid;
+						obs_websocket_host = data.sender;
 						obs.call("BroadcastCustomEvent", {
-							eventData: { sender: module_name, method: "RequestUpdate" }
+							eventData: { module: module_name, method: "RequestUpdate" }
 						});
 					}
 				}
@@ -326,9 +341,9 @@ $(window).on("load", function () {
 			else if (data.method === "RequestHost" && obs_websocket_host === uuid && data.uuid !== uuid) {
 				obs.call("BroadcastCustomEvent", {
 					eventData: {
-						sender: module_name,
+						module: module_name,
 						method: "HostInfo",
-						host_uuid: uuid,
+						sender: uuid,
 						time: new Date().getTime(),
 						tried: [uuid]
 					}
@@ -339,83 +354,88 @@ $(window).on("load", function () {
 						if (obs_websocket_host === uuid) {
 							obs.call("BroadcastCustomEvent", {
 								eventData: {
-									sender: module_name, method: "UPDATE", auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time
+									module: module_name,
+									method: "UPDATE",
+									sender: uuid,
+									auto_scenes: auto_scenes, order_of_service: order_of_service, key_moments: key_moments, start_time: start_time
 								}
 							});
 						}
 						break;
 					case "UPDATE":
-						if (typeof data.auto_scenes === 'object') {
-							auto_scenes = data.auto_scenes;
-							window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
-							$("#auto-scenes").empty();
-							for (var service_item in auto_scenes) {
-								AddAutoScene(service_item);
-							}
-							PopulateAutoScenes();
-						}
-
-						if (typeof data.order_of_service === 'object') {
-							order_of_service = data.order_of_service;
-							window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
-
-							$("#order-of-service").empty();
-							if (order_of_service.length > 0) {
-								for (var index = 0; index < order_of_service.length; index++) {
-									$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
+						if (typeof data.sender === 'undefined' || (typeof data.sender === 'string' && data.sender !== uuid)) {
+							if (typeof data.auto_scenes === 'object') {
+								auto_scenes = data.auto_scenes;
+								window.localStorage.setItem("auto-scenes", JSON.stringify(auto_scenes));
+								$("#auto-scenes").empty();
+								for (var service_item in auto_scenes) {
+									AddAutoScene(service_item);
 								}
-							} else {
-								$("#order-of-service").append(CreateServiceItem());
-							}
-						}
-
-						if (typeof data.order_of_service === 'object' || typeof data.auto_scenes === 'object') {
-							for (var el of $("#order-of-service .service-item")) {
-								var value = el.innerText;
-								el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
-							}
-						}
-
-						if (typeof data.start_time === 'object') {
-							start_time = data.start_time;
-
-							if (typeof start_time[time_modes.recording] === 'number') {
-								window.localStorage.setItem("start-time-recording", start_time[time_modes.recording]);
-							} else {
-								window.localStorage.removeItem("start-time-recording");
+								PopulateAutoScenes();
 							}
 
-							if (typeof start_time[time_modes.streaming] === 'number') {
-								window.localStorage.setItem("start-time-streaming", start_time[time_modes.streaming]);
-							} else {
-								window.localStorage.removeItem("start-time-streaming");
+							if (typeof data.order_of_service === 'object') {
+								order_of_service = data.order_of_service;
+								window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
+
+								$("#order-of-service").empty();
+								if (order_of_service.length > 0) {
+									for (var index = 0; index < order_of_service.length; index++) {
+										$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
+									}
+								} else {
+									$("#order-of-service").append(CreateServiceItem());
+								}
 							}
 
-							$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null ? "disabled" : null);
-							$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null ? "disabled" : null);
-							$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) ? "disabled" : null);
-						}
-
-						if (typeof data.key_moments === 'object') {
-							key_moments = data.key_moments;
-							window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
-
-							$("#order-of-service li").attr("selected", null);
-							if (key_moments.length > 0) {
-								$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
+							if (typeof data.order_of_service === 'object' || typeof data.auto_scenes === 'object') {
+								for (var el of $("#order-of-service .service-item")) {
+									var value = el.innerText;
+									el.setAttribute("auto-scene", value.length > 0 && typeof auto_scenes[value.split(" - ")[0]] === 'string' ? auto_scenes[value.split(" - ")[0]] : "");
+								}
 							}
-							UpdateKeyMoments();
-						}
 
-						EnableAddKeyMoment();
-						EnableUndoKeyMoment();
-						obs.call("GetCurrentProgramScene").then(data => {
-							EnableSetCurrentScene(data.currentProgramSceneName);
-						});
-						EnableResetKeyMoments();
+							if (typeof data.start_time === 'object') {
+								start_time = data.start_time;
 
-						if (obs_websocket_host === uuid) {
-							SetCurrentScene();
+								if (typeof start_time[time_modes.recording] === 'number') {
+									window.localStorage.setItem("start-time-recording", start_time[time_modes.recording]);
+								} else {
+									window.localStorage.removeItem("start-time-recording");
+								}
+
+								if (typeof start_time[time_modes.streaming] === 'number') {
+									window.localStorage.setItem("start-time-streaming", start_time[time_modes.streaming]);
+								} else {
+									window.localStorage.removeItem("start-time-streaming");
+								}
+
+								$("#tab_streaming").attr("disabled", start_time[time_modes.streaming] == null ? "disabled" : null);
+								$("#tab_recording").attr("disabled", start_time[time_modes.recording] == null ? "disabled" : null);
+								$("#tab_clock").attr("disabled", (start_time[time_modes.recording] == null && start_time[time_modes.streaming] == null) ? "disabled" : null);
+							}
+
+							if (typeof data.key_moments === 'object') {
+								key_moments = data.key_moments;
+								window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+
+								$("#order-of-service li").attr("selected", null);
+								if (key_moments.length > 0) {
+									$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
+								}
+								UpdateKeyMoments();
+							}
+
+							EnableAddKeyMoment();
+							EnableUndoKeyMoment();
+							obs.call("GetCurrentProgramScene").then(data => {
+								EnableSetCurrentScene(data.currentProgramSceneName);
+							});
+							EnableResetKeyMoments();
+
+							if (obs_websocket_host === uuid) {
+								SetCurrentScene();
+							}
 						}
 						break;
 					default:
@@ -451,7 +471,7 @@ function EditAutoScenes(enable) {
 		}
 		obs.call("BroadcastCustomEvent", {
 			eventData: {
-				sender: module_name, method: "UPDATE", auto_scenes: auto_scenes
+				module: module_name, method: "UPDATE", auto_scenes: auto_scenes
 			}
 		});
 	}
@@ -589,7 +609,7 @@ function AddKeyMoment() {
 		key_moments.push({ name: service_item, timecode: timecode });
 		obs.call("BroadcastCustomEvent", {
 			eventData: {
-				sender: module_name, method: "UPDATE", key_moments: key_moments
+				module: module_name, method: "UPDATE", key_moments: key_moments
 			}
 		}, (error) => { console.error(error); });
 	}
@@ -617,7 +637,7 @@ function UndoKeyMoment() {
 		window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 		obs.call("BroadcastCustomEvent", {
 			eventData: {
-				sender: module_name, method: "UPDATE", key_moments: key_moments
+				module: module_name, method: "UPDATE", key_moments: key_moments
 			}
 		});
 	}
@@ -673,7 +693,7 @@ function Reset() {
 
 		obs.call("BroadcastCustomEvent", {
 			eventData: {
-				sender: module_name, method: "UPDATE", key_moments: key_moments, start_time: start_time
+				module: module_name, method: "UPDATE", key_moments: key_moments, start_time: start_time
 			}
 		});
 	}
