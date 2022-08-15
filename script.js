@@ -36,6 +36,8 @@ var host_time_offset = 0;
 var obs_websocket_url = "";
 var obs_websocket_password = "";
 
+var dragging = null;
+
 function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
 		start_time[mode] = new Date().getTime();
@@ -163,6 +165,20 @@ $(window).on("load", function () {
 				module: module_name, sender: uuid, method: "UPDATE", order_of_service: order_of_service, key_moments: key_moments
 			}
 		}, (error) => { console.error(error); });
+	}).on("drag", "[draggable]", (e) => {
+		dragging = IndexOfElement(e.currentTarget);
+		$("#order-of-service").attr("dragging", true);
+		UpdateOrderOfService();
+	}).on("dragover", "[draggable]", (e) => {
+		e.preventDefault();
+		var index = IndexOfElement(e.currentTarget);
+		if (dragging != index && (index >= dragging - 1 && index <= dragging + 1)) {
+			order_of_service.splice(dragging < index ? index + 1 : index, 0, order_of_service[dragging]);
+			order_of_service.splice(dragging > index ? dragging + 1 : dragging, 1);
+			dragging = index;
+
+			UpdateOrderOfService();
+		}
 	});
 
 	$("tabgroup[tab-group=timing]").on("click", "tab[value]:not([disabled]):not([selected])", function (e) {
@@ -237,16 +253,10 @@ $(window).on("load", function () {
 	value = window.localStorage.getItem("order-of-service");
 	if (typeof value === 'string' && value.length > 0) {
 		order_of_service = JSON.parse(value);
-		if (order_of_service.length > 0) {
-			for (var index = 0; index < order_of_service.length; index++) {
-				$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
-			}
-		} else {
-			$("#order-of-service").append(CreateServiceItem());
-		}
 	} else {
-		$("#order-of-service").append(CreateServiceItem());
+		order_of_service = [];
 	}
+	UpdateOrderOfService();
 
 	if (key_moments.length > 0) {
 		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
@@ -378,14 +388,7 @@ $(window).on("load", function () {
 								order_of_service = data.order_of_service;
 								window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
 
-								$("#order-of-service").empty();
-								if (order_of_service.length > 0) {
-									for (var index = 0; index < order_of_service.length; index++) {
-										$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
-									}
-								} else {
-									$("#order-of-service").append(CreateServiceItem());
-								}
+								UpdateOrderOfService();
 							}
 
 							if (typeof data.order_of_service === 'object' || typeof data.auto_scenes === 'object') {
@@ -443,20 +446,6 @@ $(window).on("load", function () {
 			}
 		}
 	});
-
-	function CreateServiceItem(item) {
-		$el = $("<li/>").append(
-			$("<span/>", {
-				class: "service-item",
-				spellcheck: true,
-				contentEditable: true,
-				"auto-scene": typeof item === 'string' ? auto_scenes[item.split(" - ")[0]] : "",
-				text: item
-			})
-		);
-		autocomplete($el.find(".service-item"));
-		return $el;
-	}
 });
 
 function EditAutoScenes(enable) {
@@ -539,6 +528,33 @@ function PopulateOptions(select, options, canDisable) {
 		el.innerText = option;
 		select.appendChild(el);
 	}
+}
+
+function UpdateOrderOfService() {
+	$("#order-of-service").empty();
+	if (order_of_service.length > 0) {
+		for (var index = 0; index < order_of_service.length; index++) {
+			$("#order-of-service").append(CreateServiceItem(order_of_service[index]));
+		}
+	} else {
+		$("#order-of-service").append(CreateServiceItem());
+	}
+}
+
+function CreateServiceItem(item) {
+	$el = $("<li/>", {
+		draggable: true,
+	}).append(
+		$("<span/>", {
+			class: "service-item",
+			spellcheck: true,
+			contentEditable: true,
+			"auto-scene": typeof item === 'string' ? auto_scenes[item.split(" - ")[0]] : "",
+			text: item
+		})
+	);
+	autocomplete($el.find(".service-item"));
+	return $el;
 }
 
 function SelectOption(selectElement, optionValToSelect) {

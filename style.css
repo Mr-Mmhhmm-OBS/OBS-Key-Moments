@@ -50,6 +50,7 @@ h1 {
 
    #order-of-service li {
       position: relative;
+      cursor: grab;
    }
 
       #order-of-service li[selected] {
