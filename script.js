@@ -175,9 +175,25 @@ $(window).on("load", function () {
 		if (dragging != index && (index >= dragging - 1 && index <= dragging + 1)) {
 			order_of_service.splice(dragging < index ? index + 1 : index, 0, order_of_service[dragging]);
 			order_of_service.splice(dragging > index ? dragging + 1 : dragging, 1);
-			dragging = index;
 
+			window.localStorage.setItem("order-of-service", JSON.stringify(order_of_service.filter(e => e)));
 			UpdateOrderOfService();
+
+			if (index < key_moments.length || dragging < key_moments.length) {
+				for (var i = 0; i < key_moments.length; i++) {
+					key_moments[i].name = order_of_service[i];
+				}
+				window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
+				UpdateKeyMoments();
+			}
+
+			obs.call("BroadcastCustomEvent", {
+				eventData: {
+					module: module_name, sender: uuid, method: "UPDATE", order_of_service: order_of_service, key_moments: key_moments
+				}
+			}, (error) => { console.error(error); });
+
+			dragging = index;
 		}
 	});
 
