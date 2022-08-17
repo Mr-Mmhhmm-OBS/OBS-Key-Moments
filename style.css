@@ -1,5 +1,5 @@
 @media screen and (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-device-width: 1400px) {
-   html body{
+   html body {
       font-size: 36px;
    }
 }
@@ -45,21 +45,29 @@ h1 {
 
 #order-of-service {
    margin: 0;
-   padding-left: 1.5em;
+   padding-inline-start: 1.5em;
 }
 
+   #order-of-service[dragging] {
+      cursor: grabbing !important;
+   }
+
    #order-of-service li {
-      position: relative;
+      border: 1px solid transparent;
+   }
+
+   #order-of-service:not([dragging]) li {
       cursor: grab;
    }
 
-      #order-of-service li[selected] {
-         margin-left: 0.5em;
-      }
+   #order-of-service[dragging] li:hover {
+      border-color: red;
+   }
 
-         #order-of-service li[selected] .service-item {
-            background-color: #333;
-         }
+   #order-of-service li[selected] {
+      padding-left: 0.5em;
+      background-color: #343434;
+   }
 
    #order-of-service .service-item {
       display: inline-block;
@@ -72,22 +80,22 @@ h1 {
       white-space: nowrap;
    }
 
-   #order-of-service .service-item {
+   #order-of-service:not([dragging]) .service-item {
       cursor: text;
    }
 
-      #order-of-service .service-item:hover {
-         background-color: #191919;
-      }
+   #order-of-service .service-item:hover {
+      background-color: #191919;
+   }
 
-      #order-of-service .service-item[auto-scene]:after {
-         content: attr(auto-scene);
-         display: inline-block;
-         margin-left: 0.5em;
-         font-style: italic;
-         font-weight: 100;
-         float: right;
-      }
+   #order-of-service .service-item[auto-scene]:after {
+      content: attr(auto-scene);
+      display: inline-block;
+      margin-left: 0.5em;
+      font-style: italic;
+      font-weight: 100;
+      float: right;
+   }
 
 #autocomplete-list {
    position: absolute;
@@ -140,7 +148,7 @@ button {
    padding: 0.1em;
    outline: none;
    height: 1.75em;
-   text-anchor:middle;
+   text-anchor: middle;
    user-select: none;
 }
 
@@ -295,7 +303,7 @@ footer {
    animation-iteration-count: 1;
 }
 
-#version{
+#version {
    color: white;
    font-weight: 100;
    font-style: italic;
@@ -305,25 +313,27 @@ footer {
       content: "v";
    }
 
-   .obs-websocket-connection:after {
-      content: "OBS WebSocket Not Connected";
-      display: inline-block;
-      font-style: italic;
-      border-radius: 0.5em;
-      border: 1px solid transparent;
-   }
+.obs-websocket-connection:after {
+   content: "OBS WebSocket Not Connected";
+   display: inline-block;
+   font-style: italic;
+   border-radius: 0.5em;
+   border: 1px solid transparent;
+}
 
 [obs-websocket-state=disconnected] .obs-websocket-connection:after {
    content: "OBS WebSocket Disconnected";
 }
 
-@keyframes pulse-red{
+@keyframes pulse-red {
    0% {
       background-color: #363636;
    }
-   50%{
+
+   50% {
       background-color: #cc0000;
    }
+
    100% {
       background-color: #363636;
    }
@@ -344,7 +354,7 @@ footer {
    }
 }
 
-[obs-websocket-state=connected] .obs-websocket-connection:after{
+[obs-websocket-state=connected] .obs-websocket-connection:after {
    content: "OBS WebSocket Connected";
    color: #00cc00;
 }

@@ -165,14 +165,13 @@ $(window).on("load", function () {
 				module: module_name, sender: uuid, method: "UPDATE", order_of_service: order_of_service, key_moments: key_moments
 			}
 		}, (error) => { console.error(error); });
-	}).on("drag", "[draggable]", (e) => {
+	}).on("mousedown", "[reorder]", (e) => {
 		dragging = IndexOfElement(e.currentTarget);
 		$("#order-of-service").attr("dragging", true);
-		UpdateOrderOfService();
-	}).on("dragover", "[draggable]", (e) => {
+	}).on("mousemove", "[reorder]", (e) => {
 		e.preventDefault();
 		var index = IndexOfElement(e.currentTarget);
-		if (dragging != index && (index >= dragging - 1 && index <= dragging + 1)) {
+		if (dragging != null && dragging != index && (index >= dragging - 1 && index <= dragging + 1)) {
 			order_of_service.splice(dragging < index ? index + 1 : index, 0, order_of_service[dragging]);
 			order_of_service.splice(dragging > index ? dragging + 1 : dragging, 1);
 
@@ -185,6 +184,9 @@ $(window).on("load", function () {
 				}
 				window.localStorage.setItem("key-moments", JSON.stringify(key_moments));
 				UpdateKeyMoments();
+				obs.call("GetCurrentProgramScene").then(data => {
+					EnableSetCurrentScene(data.currentProgramSceneName);
+				});
 			}
 
 			obs.call("BroadcastCustomEvent", {
@@ -195,6 +197,12 @@ $(window).on("load", function () {
 
 			dragging = index;
 		}
+	}).on("mouseup", "[reorder]", (e) => {
+		dragging = null;
+		$("#order-of-service").removeAttr("dragging");
+	}).on("mouseleave", (e) => {
+		dragging = null;
+		$("#order-of-service").removeAttr("dragging");
 	});
 
 	$("tabgroup[tab-group=timing]").on("click", "tab[value]:not([disabled]):not([selected])", function (e) {
@@ -555,11 +563,15 @@ function UpdateOrderOfService() {
 	} else {
 		$("#order-of-service").append(CreateServiceItem());
 	}
+
+	if (key_moments.length > 0) {
+		$("#order-of-service li:nth-child(" + key_moments.length + ")").attr("selected", "selected");
+	}
 }
 
 function CreateServiceItem(item) {
 	$el = $("<li/>", {
-		draggable: true,
+		reorder: true,
 	}).append(
 		$("<span/>", {
 			class: "service-item",
