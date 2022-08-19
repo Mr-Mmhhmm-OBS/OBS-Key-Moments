@@ -1,17 +1,7 @@
-@media screen and (min-resolution: 240dpi) and (max-resolution: 900dpi) and (max-device-width: 1400px) {
-   html body {
-      font-size: 36px;
-   }
-}
-
-@media screen and (min-device-width: 1200px) and (max-device-width: 1600px) and (-webkit-min-device-pixel-ratio: 2) and (min-resolution: 192dpi) {
-   html body {
-      font-size: 24px;
-   }
-}
-
 html {
    background-color: #242424;
+   -webkit-text-size-adjust: none;
+   text-size-adjust: none;
 }
 
 html, body {
@@ -20,7 +10,6 @@ html, body {
 }
 
 body {
-   font-size: 12px;
    display: flex;
    flex-direction: column;
 }
@@ -274,6 +263,14 @@ button#add-auto-scene {
 #add-key-moment[count-down]:after {
    content: " (" attr(count-down) ")";
 }
+
+button.change-font-size[direction] {
+   width: 2em;
+}
+
+   button.change-font-size[direction]:before {
+      content: attr(direction);
+   }
 
 footer {
    display: flex;

@@ -12,6 +12,10 @@ Number.prototype.formatDuration = function () {
 function IndexOfElement(element) {
 	return Array.from(element.parentElement.children).indexOf(element)
 }
+
+var fontsize = 2;
+var fontsize_step = 0.05;
+
 var uuid = uuidv4();
 const module_name = "OBS-Key-Moments";
 
@@ -37,6 +41,10 @@ var obs_websocket_url = "";
 var obs_websocket_password = "";
 
 var dragging = null;
+
+errors = {
+	AuthenticationRequired: 4009
+}
 
 function Start(mode) {
 	if (mode != null && (mode === time_modes.streaming || mode === time_modes.recording)) {
@@ -86,6 +94,9 @@ function Connect() {
 			});
 		}, (error) => {
 			console.error("Failed to Connect", error.code, error.message);
+			if (error.code === errors.AuthenticationRequired) {
+				EditAutoScenes(true);
+			}
 			alert("Failed to Connect\nError Code:" + error.code + "\n" + error.message);
 		});
 	}
@@ -96,6 +107,14 @@ function Disconnect() {
 }
 
 $(window).on("load", function () {
+	$(".change-font-size[direction]").on("click", (e) => {
+		var increase = e.currentTarget.getAttribute("direction") === "+";
+		console.log(fontsize);
+		fontsize = Math.max(fontsize_step, fontsize + (fontsize_step * (increase ? 1 : -1)));
+		window.localStorage.setItem("font-size", fontsize);
+		$("body").css("font-size", fontsize + "em");
+	})
+
 	$("#order-of-service").on('keydown', ".service-item", (e) => {
 		switch (e.key) {
 			case 'Enter':
@@ -233,7 +252,15 @@ $(window).on("load", function () {
 		}
 	});
 
-	var value = window.localStorage.getItem("auto-scenes");
+	var value = window.localStorage.getItem("font-size");
+	if (typeof value === 'string' && value.length > 0) {
+		fontsize = parseFloat(value);
+	} else {
+		fontsize = 2;
+	}
+	$("body").css("font-size", fontsize + "em");
+
+	value = window.localStorage.getItem("auto-scenes");
 	if (typeof value === 'string' && value.length > 0) {
 		auto_scenes = JSON.parse(value);
 		for (var service_item in auto_scenes) {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-   <title>Key Moments</title>
+   <title>OBS Key Moments</title>
    <link rel="stylesheet" href="style.css">
    <link rel="stylesheet" href="tabs.css">
    <script type="text/javascript" src='obs-websocket-js.min.js'></script>
@@ -10,6 +10,7 @@
    <script type="text/javascript" src="script.js"></script>
    <script type="text/javascript" src="autocomplete.js"></script>
    <script type="text/javascript" src="tabs.js"></script>
+   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0">
 </head>
 <body>
    <main>
@@ -33,6 +34,7 @@
       </div>
       <div id="settings" class="menu" style="display:none;">
          <div>
+            <div class="row"><label>Font Size:</label><button class="change-font-size" direction="-"></button><button class="change-font-size" direction="+"></button></div>
             <div id="obs-websocket-settings">
                <div class="row"><label>Address: </label><input id="obs-websocket-url" type="url" placeholder="ws://localhost:port" /></div>
                <div class="row"><label>Password: </label><input id="obs-websocket-password" type="password" /></div>
