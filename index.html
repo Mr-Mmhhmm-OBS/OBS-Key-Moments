@@ -14,8 +14,12 @@
 </head>
 <body>
    <main>
-      <button id="edit-auto-scenes" onclick="EditAutoScenes(true);">Edit</button>
-      <h1>Order of Service</h1>
+      <div class="row">
+         <button class="change-font-size" direction="-"></button>
+         <button class="change-font-size" direction="+"></button>
+         <h1>Order of Service</h1>
+         <button id="edit-auto-scenes" onclick="EditAutoScenes(true);">Edit</button>
+      </div>
       <ol id="order-of-service"></ol>
       <h1>Key Moments</h1>
       <tabgroup tab-group="timing">
@@ -34,7 +38,6 @@
       </div>
       <div id="settings" class="menu" style="display:none;">
          <div>
-            <div class="row"><label>Font Size:</label><button class="change-font-size" direction="-"></button><button class="change-font-size" direction="+"></button></div>
             <div id="obs-websocket-settings">
                <div class="row"><label>Address: </label><input id="obs-websocket-url" type="url" placeholder="ws://localhost:port" /></div>
                <div class="row"><label>Password: </label><input id="obs-websocket-password" type="password" /></div>

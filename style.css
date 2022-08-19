@@ -102,11 +102,15 @@ h1 {
    color: #ffffff;
 }
 
-button#edit-auto-scenes {
-   float: right;
+h1{
+   flex: 1 1 auto;
+}
+
+button#edit-auto-scenes, .change-font-size {
    width: auto;
-   height: auto;
-   margin-top: 0.5em;
+   height: 1.5em;
+   line-height: 1em;
+   margin: auto 1px;
    padding: 0.2em;
 }
 
