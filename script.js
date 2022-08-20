@@ -570,14 +570,16 @@ function PopulateOptions(select, options, canDisable) {
 	if (canDisable !== false) {
 		var el = document.createElement("option");
 		el.value = "";
-		el.innerText = "--Disabled--";
+		el.innerText = "--No Change--";
 		select.appendChild(el);
 	}
-	for (var option of options) {
-		var el = document.createElement("option");
-		el.value = option;
-		el.innerText = option;
-		select.appendChild(el);
+	if (typeof options === 'object' && options.length > 0) {
+		for (var option of options) {
+			var el = document.createElement("option");
+			el.value = option;
+			el.innerText = option;
+			select.appendChild(el);
+		}
 	}
 }
 
@@ -621,6 +623,8 @@ function SelectOption(selectElement, optionValToSelect) {
 			break;
 		}
 	}
+
+	// Option not found
 }
 
 var countdown_timeout = null;

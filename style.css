@@ -294,7 +294,8 @@ footer {
 [obs-websocket-state=disconnected] footer {
    animation-name: pulse-red;
    animation-duration: 1.0s;
-   animation-iteration-count: infinite;
+   animation-iteration-count: 3;
+   background-color: #cc0000;
 }
 
 [obs-websocket-state=connected] footer,
