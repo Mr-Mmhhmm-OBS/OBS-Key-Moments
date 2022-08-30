@@ -153,6 +153,9 @@ $(window).on("load", function () {
 				break;
 			default:
 		}
+	}).on("mousedown", ".service-item", function (e) {
+		// Don't reorder if clicking on the input
+		e.stopPropagation();
 	}).on("focus", ".service-item", function (e) {
 		e.currentTarget.removeAttribute("auto-scene");
 	}).on("blur", ".service-item", function (e) {
