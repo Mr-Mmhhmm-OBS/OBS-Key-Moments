@@ -57,10 +57,8 @@ function Start(mode) {
 			});
 		}
 
-		$("#tab_" + mode).attr("disabled", null);
-		$("#tab_clock").attr("disabled", null);
-		if (time_mode != mode && start_time[time_mode] == null) {
-			SetTimeMode(time_modes.clock);
+		if (time_mode != mode && key_moments.length === 0) {
+			SetTimeMode(mode);
 		}
 	}
 }
